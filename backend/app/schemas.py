@@ -1,0 +1,188 @@
+"""请求 / 响应模型。
+
+FastAPI 会自动把它们变成 OpenAPI 文档（/docs），
+这是选 Python 最实际的收益之一：接口文档不用手写，也不会和实现脱节。
+"""
+
+from __future__ import annotations
+
+from datetime import date, datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+# ---------- 建局 ----------
+
+
+class GroupCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=60, description="这个局叫什么，例如「周六去哪」")
+    origin_area: str = Field(default="海岸城", description="集合商圈，决定默认出发点")
+    meet_date: date | None = Field(default=None, description="哪一天")
+    budget: float | None = Field(default=None, ge=0, le=5000, description="人均预算上限")
+    weather: str | None = Field(default=None, description="rain / hot / clear，留空则不修正")
+    window_minutes: int = Field(default=360, ge=120, le=720, description="可玩多久")
+
+
+class MemberOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    nickname: str
+    filled: bool = Field(default=False, description="是否已填偏好")
+
+    @classmethod
+    def of(cls, member, filled: bool) -> "MemberOut":
+        return cls(id=member.id, nickname=member.nickname, filled=filled)
+
+
+class GroupOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    code: str
+    name: str
+    city: str
+    meet_date: date | None
+    budget: float | None
+    origin_area: str
+    weather: str | None
+    window_minutes: int
+    created_at: datetime
+    members: list[MemberOut] = []
+
+
+# ---------- 入局 / 填偏好 ----------
+
+
+class MemberCreate(BaseModel):
+    nickname: str = Field(min_length=1, max_length=30)
+
+
+class DemoOut(BaseModel):
+    """示例局：给第一次打开的人一个「已经填好」的局，直接看结果。"""
+
+    code: str
+    member_id: int
+    nickname: str
+    members: int
+
+
+class PreferenceIn(BaseModel):
+    quiet: float = Field(default=0.5, ge=0, le=1, description="0 热闹 ~ 1 安静")
+    price: float = Field(default=0.5, ge=0, le=1, description="0 省钱 ~ 1 舍得")
+    near: float = Field(default=0.5, ge=0, le=1, description="0 想近 ~ 1 愿意跑远")
+    max_price: float | None = Field(default=None, ge=0, le=5000)
+    exclude_tags: list[str] = Field(default_factory=list, description="忌口，例如 ['辣']")
+    require_indoor: bool = False
+    with_kids: bool = False
+    has_car: bool = False
+    free_text: str = Field(default="", max_length=200, description="一句话，例如「下雨天别走太远」")
+    auto_parse: bool = Field(default=True, description="是否用规则把一句话解析成约束")
+
+
+class PreferenceOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    quiet: float
+    price: float
+    near: float
+    max_price: float | None
+    exclude_tags: list[str]
+    require_indoor: bool
+    with_kids: bool
+    has_car: bool
+    free_text: str
+    parsed_hints: list[str] = Field(default_factory=list, description="从一句话里解读到的约束")
+
+
+# ---------- 推荐结果 ----------
+
+
+class PlanItemOut(BaseModel):
+    id: str
+    name: str
+    area: str
+    category: str
+    avg_price: float
+    blurb: str
+    offset_minutes: float = Field(default=0.0, description="从出发算起第几分钟到，用于渲染时间线")
+
+
+class PlanOut(BaseModel):
+    id: int = Field(description="投票时要用这个 id")
+    items: list[PlanItemOut]
+    consensus: float
+    mean_score: float
+    worst_score: float
+    worst_member: str
+    total_minutes: float
+    explanation: str
+    per_member: dict[str, float]
+
+
+class ConsensusOut(BaseModel):
+    id: str
+    consensus: float
+    mean: float
+    worst: float
+    worst_member: str
+    borda: float
+    regret: float
+    spread: float
+
+
+class RecommendOut(BaseModel):
+    plans: list[PlanOut]
+    top_pois: list[ConsensusOut]
+    agreement: float
+    notes: list[str]
+
+
+# ---------- 投票 ----------
+
+
+class VoteIn(BaseModel):
+    member_id: int
+
+
+class VoteOut(BaseModel):
+    plan_id: int
+    votes: int
+    voters: list[str]
+    winner: bool = False
+
+
+# ---------- 地点 / 评价 ----------
+
+
+class POIOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    name: str
+    area: str
+    district: str
+    category: str
+    avg_price: float
+    rating: float
+    indoor: bool
+    kid_friendly: bool
+    tags: list[str]
+    blurb: str
+
+
+class ReviewIn(BaseModel):
+    member_id: int
+    poi_id: str
+    rating: int = Field(ge=1, le=5)
+    comment: str = Field(default="", max_length=500)
+
+
+class ReviewOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    poi_id: str
+    member_id: int
+    rating: int
+    comment: str
