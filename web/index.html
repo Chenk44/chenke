@@ -157,6 +157,12 @@
 /* ---------------- 基础设施 ---------------- */
 
 const $app = document.getElementById("app");
+
+// 用 127.0.0.1 / localhost 访问时，复制出去的链接指向「对方自己的电脑」，
+// 必然打不开。这种情况必须在界面上直说，别让用户以为是软件坏了。
+// 局域网 IP（10.x / 192.168.x）别人在同一网络下能打开，不需要警告。
+const LOCAL_HOST = /^(127\.|localhost$|0\.0\.0\.0$)/.test(location.hostname);
+
 const state = {
   code: localStorage.getItem("zk_code") || "",
   memberId: Number(localStorage.getItem("zk_member") || 0) || null,
@@ -558,6 +564,11 @@ async function renderGroupView() {
         <button class="primary" id="btn-generate">${filled ? "生成方案" : "先去填偏好"}</button>
       </div>
       ${!state.memberId ? `<button class="ghost full" style="margin-top:8px" id="btn-me">我也要填</button>` : ""}
+      ${LOCAL_HOST ? `<div class="muted" style="margin-top:10px;line-height:1.5">
+        <b style="color:var(--warn,#e0a33e)">注意</b>：你现在用的是本机地址（${esc(location.hostname)}），
+        这条链接只有你自己能打开。让朋友先打开同一个网址，再输邀请码
+        <b style="color:var(--brand);letter-spacing:2px">${esc(group.code)}</b>。
+      </div>` : ""}
       <div class="err" id="group-err"></div>
     </div>
     ${(result && result.notes || []).map((n) => `<div class="card" style="padding:12px 16px"><div class="muted">${esc(n)}</div></div>`).join("")}
@@ -568,7 +579,7 @@ async function renderGroupView() {
     const url = location.origin + location.pathname + "#g/" + group.code;
     try {
       await navigator.clipboard.writeText(url);
-      toast("链接已复制，发群里吧");
+      toast(LOCAL_HOST ? `已复制，但本机地址别人打不开——把邀请码 ${group.code} 发群里` : "链接已复制，发群里吧");
     } catch (e) {
       prompt("复制这个链接", url);
     }

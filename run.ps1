@@ -49,8 +49,16 @@ Write-Host '[..] 灌入深圳地点数据' -ForegroundColor Cyan
 
 Write-Host ''
 Write-Host '  就绪: http://127.0.0.1:8000' -ForegroundColor Green
+try {
+    $lan = (Get-NetIPAddress -AddressFamily IPv4 -ErrorAction Stop |
+        Where-Object { $_.IPAddress -notlike '127.*' -and $_.InterfaceAlias -notlike '*VMware*' -and $_.InterfaceAlias -notlike '*Radmin*' } |
+        Select-Object -First 1).IPAddress
+} catch { $lan = $null }
+if ($lan) {
+    Write-Host "  同一 WiFi 给朋友: http://$lan`:8000" -ForegroundColor Green
+}
 Write-Host '  接口文档: http://127.0.0.1:8000/docs' -ForegroundColor Green
 Write-Host '  按 Ctrl+C 停止' -ForegroundColor DarkGray
 Write-Host ''
 
-& $py -m uvicorn app.main:app --app-dir backend --reload
+& $py -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --reload
