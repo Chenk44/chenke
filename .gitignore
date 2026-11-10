@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# 数据库与本地环境
+*.db
+*.sqlite3
+.env
+
+# 测试与工具
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+tests/_test.db
+tests/_bad_category.csv
+
+# 本地临时目录（装依赖、截图用的浏览器 profile 等）
+.tmp/
+
+# 编辑器
+.vscode/
+.idea/
+.DS_Store
+
+# 打包产物
+dist/
+build/
+*.zip

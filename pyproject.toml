@@ -1,0 +1,28 @@
+[project]
+name = "zhongkou"
+version = "0.1.0"
+description = "众口：为一群人（而不是单个人）推荐去哪玩"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    # Starlette 对 httpx 的弃用提醒，升级到 httpx2 才能消掉，和本项目无关
+    "ignore::DeprecationWarning:starlette.*",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = [
+    "E501",   # 行长由 formatter 控制
+    "B008",   # FastAPI 的 Depends 就是在默认值里调用
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
