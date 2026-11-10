@@ -9,9 +9,10 @@ from __future__ import annotations
 import socket
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .config import BASE_DIR, settings
@@ -47,6 +48,23 @@ app.add_middleware(
 app.include_router(groups.router)
 app.include_router(plans.router)
 app.include_router(pois.router)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """把 Pydantic 的原始错误列表压成一句人话。
+
+    原始响应长这样，直接甩给用户没人看得懂：
+        [{"type":"int_parsing","loc":["path","member_id"],"msg":"Input should be a valid integer",...}]
+    """
+    readable = []
+    for err in exc.errors()[:3]:
+        loc = ".".join(str(p) for p in err.get("loc", ()) if p not in ("body", "path", "query"))
+        readable.append(f"{loc + ' ' if loc else ''}{err.get('msg', '取值不合法')}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": "参数不对 · " + "；".join(readable)},
+    )
 
 
 @app.get("/api/health", tags=["meta"])

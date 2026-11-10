@@ -48,6 +48,16 @@ def test_netinfo_returns_lan_addresses(client):
     assert all(isinstance(ip, str) and not ip.startswith("127.") for ip in ips)
 
 
+def test_bad_path_param_gets_a_readable_message(client):
+    """原来用户会看到 Pydantic 的原始 JSON 列表，现在压成一句中文。"""
+    resp = client.put("/api/members/not-a-number/preference", json={"quiet": 0.5})
+    assert resp.status_code == 422
+    detail = resp.json()["detail"]
+    assert isinstance(detail, str)
+    assert "参数不对" in detail
+
+
+
 def test_group_code_is_short_and_readable(client):
     group = _new_group(client)
     code = group["code"]

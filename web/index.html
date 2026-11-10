@@ -365,6 +365,13 @@ async function loadGroup(code) {
   const group = await api(`/groups/${code}`);
   state.group = group;
 
+  // localStorage 里的 memberId 可能来自上一个局。它在本局不存在时必须清掉，
+  // 否则会拿别人的 id 去保存偏好/投票（后端直接 422，用户只看到一串英文报错）。
+  if (state.memberId && !group.members.some((m) => m.id === state.memberId)) {
+    state.memberId = null;
+    localStorage.removeItem("zk_member");
+  }
+
   if (!state.memberId) return renderGroupView();
 
   try {
@@ -469,6 +476,11 @@ function renderPref() {
     });
 
     btn.disabled = true;
+    if (!state.memberId) {
+      // 兜底：没登记就保存，先引导去填昵称，而不是把 null 拼进 URL
+      btn.disabled = false;
+      return renderJoin(state.code);
+    }
     try {
       const saved = await api(`/members/${state.memberId}/preference`, {
         method: "PUT",
@@ -561,7 +573,7 @@ async function renderGroupView() {
 
       <div class="split" style="margin-top:14px">
         <button class="ghost" id="btn-invite">复制邀请链接</button>
-        <button class="primary" id="btn-generate">${filled ? "生成方案" : "先去填偏好"}</button>
+        <button class="primary" id="btn-generate">${filled ? "生成方案" : (state.memberId ? "去填偏好" : "加入并填偏好")}</button>
       </div>
       ${!state.memberId ? `<button class="ghost full" style="margin-top:8px" id="btn-me">我也要填</button>` : ""}
       ${LOCAL_HOST ? `<div class="muted" style="margin-top:10px;line-height:1.5">
@@ -603,7 +615,12 @@ async function renderGroupView() {
 
   const gen = document.getElementById("btn-generate");
   gen.onclick = async () => {
-    if (!filled) return renderPref();
+    if (!filled) {
+      // 还没在这个局里登记过，先问「你是谁」，别直接把人扔进填表页——
+      // 那样点保存会打 /api/members/null/preference，只会得到一串英文 422。
+      if (!state.memberId) return renderJoin(group.code);
+      return renderPref();
+    }
     gen.disabled = true;
     gen.textContent = "算一下…";
     try {
