@@ -13,7 +13,6 @@ from algo import POI, Preference, Recommendation, recommend
 from algo.loader import load_pois
 
 from ..models import Group, Member, POIRecord
-from ..config import settings
 
 
 class RecommendError(RuntimeError):

@@ -137,10 +137,7 @@ def score_all(
     group_size: int = 2,
 ) -> dict[str, ScoredPOI]:
     """对一批地点打分。travel_fn(poi) 返回从出发点过去需要多少分钟。"""
-    return {
-        p.id: score_poi(p, pref, travel_fn(p), group_size)
-        for p in pois
-    }
+    return {p.id: score_poi(p, pref, travel_fn(p), group_size) for p in pois}
 
 
 def borda_points(ranking: list[str]) -> dict[str, float]:

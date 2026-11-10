@@ -27,7 +27,7 @@ class Recommendation:
 
     plans: list[Plan]
     top_pois: list[Consensus]
-    agreement: float                       # 两种聚合规则的一致度 0~1
+    agreement: float  # 两种聚合规则的一致度 0~1
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
@@ -42,7 +42,9 @@ class Recommendation:
                             "category": p.category,
                             "avg_price": p.avg_price,
                             "blurb": p.blurb,
-                            "offset_minutes": round(plan.offsets[i] if i < len(plan.offsets) else 0.0, 1),
+                            "offset_minutes": round(
+                                plan.offsets[i] if i < len(plan.offsets) else 0.0, 1
+                            ),
                         }
                         for i, p in enumerate(plan.items)
                     ],

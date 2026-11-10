@@ -64,9 +64,7 @@ def add_review(payload: ReviewIn, db: Session = Depends(get_db)) -> ReviewOut:
         raise HTTPException(status_code=404, detail="地点不存在")
 
     existing = db.scalar(
-        select(Review).where(
-            Review.poi_id == payload.poi_id, Review.member_id == payload.member_id
-        )
+        select(Review).where(Review.poi_id == payload.poi_id, Review.member_id == payload.member_id)
     )
     if existing is None:
         existing = Review(poi_id=payload.poi_id, member_id=payload.member_id)

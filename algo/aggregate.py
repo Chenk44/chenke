@@ -31,8 +31,8 @@ class Consensus:
     worst_member: str
     consensus: float
     borda: float = 0.0
-    regret: float = 0.0      # 0 最好（没人后悔），1 最差
-    spread: float = 0.0      # 分数极差，越大代表分歧越大
+    regret: float = 0.0  # 0 最好（没人后悔），1 最差
+    spread: float = 0.0  # 分数极差，越大代表分歧越大
 
 
 def _clip(x: float) -> float:
@@ -126,7 +126,9 @@ def rank_agreement(matrix: dict[str, dict[str, float]]) -> float:
         return 1.0
 
     ids = [c.poi_id for c in cons]
-    rank_borda = {c.poi_id: i for i, c in enumerate(sorted(cons, key=lambda c: c.borda, reverse=True))}
+    rank_borda = {
+        c.poi_id: i for i, c in enumerate(sorted(cons, key=lambda c: c.borda, reverse=True))
+    }
     rank_cons = {c.poi_id: i for i, c in enumerate(cons)}
 
     concordant = discordant = 0

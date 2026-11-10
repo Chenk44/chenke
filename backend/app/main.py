@@ -59,6 +59,7 @@ _web_dir = BASE_DIR / "web"
 if _web_dir.exists():
     app.mount("/", StaticFiles(directory=str(_web_dir), html=True), name="web")
 else:  # 只跑 API 时也能用
+
     @app.get("/", include_in_schema=False)
     def _root() -> RedirectResponse:
         return RedirectResponse(url="/docs")

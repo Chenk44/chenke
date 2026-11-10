@@ -128,9 +128,7 @@ def test_recommend_is_deterministic_over_http(client):
     group, _ = _prepare(client, 3)
     a = client.post(f"/api/groups/{group['code']}/recommend").json()
     b = client.post(f"/api/groups/{group['code']}/recommend").json()
-    assert [p["items"][0]["id"] for p in a["plans"]] == [
-        p["items"][0]["id"] for p in b["plans"]
-    ]
+    assert [p["items"][0]["id"] for p in a["plans"]] == [p["items"][0]["id"] for p in b["plans"]]
 
 
 def test_plans_persist_and_can_be_listed(client):
@@ -202,9 +200,7 @@ def test_review_upsert(client):
 
 
 def test_review_rejects_unknown_poi(client):
-    resp = client.post(
-        "/api/reviews", json={"member_id": 1, "poi_id": "nope", "rating": 5}
-    )
+    resp = client.post("/api/reviews", json={"member_id": 1, "poi_id": "nope", "rating": 5})
     assert resp.status_code == 404
 
 

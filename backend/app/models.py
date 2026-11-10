@@ -40,7 +40,7 @@ class Group(Base):
     name: Mapped[str] = mapped_column(String(60))
     city: Mapped[str] = mapped_column(String(30), default="深圳")
     meet_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    budget: Mapped[float | None] = mapped_column(Float, nullable=True)   # 人均预算上限
+    budget: Mapped[float | None] = mapped_column(Float, nullable=True)  # 人均预算上限
     origin_area: Mapped[str] = mapped_column(String(30), default="海岸城")
     origin_lat: Mapped[float] = mapped_column(Float, default=22.518)
     origin_lng: Mapped[float] = mapped_column(Float, default=113.936)
@@ -48,10 +48,10 @@ class Group(Base):
     window_minutes: Mapped[int] = mapped_column(Integer, default=360)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
-    members: Mapped[list["Member"]] = relationship(
+    members: Mapped[list[Member]] = relationship(
         back_populates="group", cascade="all, delete-orphan", lazy="selectin"
     )
-    plans: Mapped[list["PlanRecord"]] = relationship(
+    plans: Mapped[list[PlanRecord]] = relationship(
         back_populates="group", cascade="all, delete-orphan", lazy="selectin"
     )
 
@@ -67,7 +67,7 @@ class Member(Base):
     joined_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     group: Mapped[Group] = relationship(back_populates="members")
-    preference: Mapped["PreferenceRecord | None"] = relationship(
+    preference: Mapped[PreferenceRecord | None] = relationship(
         back_populates="member", cascade="all, delete-orphan", uselist=False, lazy="selectin"
     )
 
@@ -85,7 +85,7 @@ class PreferenceRecord(Base):
     price: Mapped[float] = mapped_column(Float, default=0.5)
     near: Mapped[float] = mapped_column(Float, default=0.5)
     max_price: Mapped[float | None] = mapped_column(Float, nullable=True)
-    exclude_tags: Mapped[list] = mapped_column(JSON, default=list)   # ["辣", "海鲜"]
+    exclude_tags: Mapped[list] = mapped_column(JSON, default=list)  # ["辣", "海鲜"]
     require_indoor: Mapped[bool] = mapped_column(Boolean, default=False)
     with_kids: Mapped[bool] = mapped_column(Boolean, default=False)
     has_car: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -134,7 +134,7 @@ class PlanRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     group: Mapped[Group] = relationship(back_populates="plans")
-    votes: Mapped[list["Vote"]] = relationship(
+    votes: Mapped[list[Vote]] = relationship(
         back_populates="plan", cascade="all, delete-orphan", lazy="selectin"
     )
 
@@ -162,6 +162,6 @@ class Review(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     poi_id: Mapped[str] = mapped_column(String(40), index=True)
     member_id: Mapped[int] = mapped_column(ForeignKey("members.id", ondelete="CASCADE"), index=True)
-    rating: Mapped[int] = mapped_column(Integer, default=5)      # 1~5
+    rating: Mapped[int] = mapped_column(Integer, default=5)  # 1~5
     comment: Mapped[str] = mapped_column(Text, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

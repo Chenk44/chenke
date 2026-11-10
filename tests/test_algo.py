@@ -9,7 +9,6 @@ from __future__ import annotations
 import pytest
 
 from algo.aggregate import aggregate, consensus_for, minimax_regret, rank_agreement
-from algo.combine import build_plans
 from algo.geo import distance_decay, estimate_travel_minutes, haversine_km
 from algo.loader import POIDataError, load_pois
 from algo.pipeline import apply_weather, recommend
@@ -19,10 +18,24 @@ from algo.utility import comfort_price, price_score, score_poi
 
 def make_poi(**kw) -> POI:
     base = dict(
-        id="p1", name="测试地点", area="海岸城", district="南山区", category="餐饮",
-        lat=22.518, lng=113.936, avg_price=80.0, rating=4.5, indoor=True, quiet=0.5,
-        min_people=2, max_people=10, kid_friendly=True, need_booking=False, queue=0.2,
-        tags=(), blurb="",
+        id="p1",
+        name="测试地点",
+        area="海岸城",
+        district="南山区",
+        category="餐饮",
+        lat=22.518,
+        lng=113.936,
+        avg_price=80.0,
+        rating=4.5,
+        indoor=True,
+        quiet=0.5,
+        min_people=2,
+        max_people=10,
+        kid_friendly=True,
+        need_booking=False,
+        queue=0.2,
+        tags=(),
+        blurb="",
     )
     base.update(kw)
     return POI(**base)
@@ -159,8 +172,8 @@ def test_consensus_rewards_fairness_over_raw_average():
 
     这正是「一群人的决策」和「一个人的推荐」的分界线。
     """
-    polarised = {"甲": 0.9, "乙": 0.1, "丙": 0.9}     # 平均 0.633，乙很难受
-    balanced = {"甲": 0.7, "乙": 0.6, "丙": 0.6}      # 平均 0.633，没人难受
+    polarised = {"甲": 0.9, "乙": 0.1, "丙": 0.9}  # 平均 0.633，乙很难受
+    balanced = {"甲": 0.7, "乙": 0.6, "丙": 0.6}  # 平均 0.633，没人难受
 
     assert sum(polarised.values()) == pytest.approx(sum(balanced.values()))
 
@@ -179,9 +192,7 @@ def test_aggregate_sorts_by_consensus_desc():
     }
     ranked = aggregate(matrix)
     assert ranked[0].poi_id in {"x", "y"}
-    assert [c.consensus for c in ranked] == sorted(
-        [c.consensus for c in ranked], reverse=True
-    )
+    assert [c.consensus for c in ranked] == sorted([c.consensus for c in ranked], reverse=True)
 
 
 def test_minimax_regret_punishes_the_worst_case():
@@ -259,7 +270,9 @@ def test_every_plan_carries_an_ascending_timeline():
         assert len(plan.offsets) == len(plan.items)
         assert plan.offsets[0] > 0, "从出发点过去也要花时间"
         assert plan.offsets == sorted(plan.offsets)
-        assert all(b > a for a, b in zip(plan.offsets, plan.offsets[1:])), "时间必须严格递增"
+        assert all(b > a for a, b in zip(plan.offsets, plan.offsets[1:], strict=False)), (
+            "时间必须严格递增"
+        )
         assert plan.offsets[-1] < plan.total_minutes
 
 
@@ -310,7 +323,9 @@ def test_rainy_recommendation_prefers_indoor_places():
 
     def indoor_ratio(weather: str) -> float:
         ps = [
-            Preference(p.member_id, quiet=p.quiet, price=p.price, near=p.near, with_kids=p.with_kids)
+            Preference(
+                p.member_id, quiet=p.quiet, price=p.price, near=p.near, with_kids=p.with_kids
+            )
             for p in prefs
         ]
         rec = recommend(pois, ps, origin=(22.518, 113.936), weather=weather)

@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import pytest
-
 from app.services.nlp import merge_hints, parse_constraints
 
 

@@ -16,9 +16,24 @@ from .types import CATEGORIES, POI
 DEFAULT_CSV = Path(__file__).resolve().parent.parent / "data" / "pois_shenzhen.csv"
 
 REQUIRED_COLUMNS = (
-    "id", "name", "area", "district", "category", "lat", "lng",
-    "avg_price", "rating", "indoor", "quiet", "min_people", "max_people",
-    "kid_friendly", "need_booking", "queue", "tags", "blurb",
+    "id",
+    "name",
+    "area",
+    "district",
+    "category",
+    "lat",
+    "lng",
+    "avg_price",
+    "rating",
+    "indoor",
+    "quiet",
+    "min_people",
+    "max_people",
+    "kid_friendly",
+    "need_booking",
+    "queue",
+    "tags",
+    "blurb",
 )
 
 
@@ -68,7 +83,7 @@ def load_pois(path: str | Path | None = None) -> list[POI]:
             where = f"{csv_path.name}:{lineno}"
             pid = (row["id"] or "").strip()
             if not pid:
-                continue                      # 允许空行和注释行
+                continue  # 允许空行和注释行
             if pid in seen:
                 raise POIDataError(f"{where}: 重复的 id {pid!r}")
             seen.add(pid)

@@ -24,10 +24,10 @@ try:
 except (AttributeError, OSError):  # 老 Python 或重定向到不支持的对象
     pass
 
-from algo.loader import POIDataError, load_pois  # noqa: E402
-
 from app.db import SessionLocal, init_db  # noqa: E402
 from app.models import POIRecord  # noqa: E402
+
+from algo.loader import POIDataError, load_pois  # noqa: E402
 
 
 def seed(reset: bool = False) -> int:

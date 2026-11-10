@@ -9,6 +9,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 from pathlib import Path
@@ -18,41 +19,49 @@ ROOT = Path(__file__).resolve().parent.parent
 os.environ["DATABASE_URL"] = f"sqlite:///{ROOT / 'demo.db'}"
 sys.path[:0] = [str(ROOT), str(ROOT / "backend")]
 
-try:  # Windows 控制台默认不是 UTF-8
-    sys.stdout.reconfigure(encoding="utf-8")
-except Exception:  # noqa: BLE001 - 老版本 Python 没有这个参数
-    pass
-
-from fastapi.testclient import TestClient  # noqa: E402
+# Windows 控制台默认不是 UTF-8，直接 print 中文会 UnicodeEncodeError
+with contextlib.suppress(AttributeError, OSError):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 from app.main import app  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 
 MEMBERS = [
     {
         "nickname": "小林",
-        "quiet": 0.85, "price": 0.25, "near": 0.2,
+        "quiet": 0.85,
+        "price": 0.25,
+        "near": 0.2,
         "free_text": "想安静点，下雨天别走太远，人均 100 以内",
     },
     {
         "nickname": "阿May",
-        "quiet": 0.35, "price": 0.75, "near": 0.6,
+        "quiet": 0.35,
+        "price": 0.75,
+        "near": 0.6,
         "free_text": "想热闹一点，可以跑远",
     },
     {
         "nickname": "老王",
-        "quiet": 0.5, "price": 0.3, "near": 0.35,
+        "quiet": 0.5,
+        "price": 0.3,
+        "near": 0.35,
         "with_kids": True,
         "free_text": "带娃，别吃辣",
     },
     {
         "nickname": "Cici",
-        "quiet": 0.6, "price": 0.55, "near": 0.8,
+        "quiet": 0.6,
+        "price": 0.55,
+        "near": 0.8,
         "exclude_tags": ["海鲜"],
         "free_text": "海鲜过敏",
     },
     {
         "nickname": "大熊",
-        "quiet": 0.4, "price": 0.5, "near": 0.5,
+        "quiet": 0.4,
+        "price": 0.5,
+        "near": 0.5,
         "has_car": True,
         "free_text": "我开车，可以带三个人",
     },
@@ -98,7 +107,9 @@ def main() -> None:
             "window_minutes": 360,
         },
     ).json()
-    print(f"邀请码 {group['code']} · 从 {group['origin_area']} 出发 · 下雨 · 人均 ≤ ¥{group['budget']:.0f}")
+    print(
+        f"邀请码 {group['code']} · 从 {group['origin_area']} 出发 · 下雨 · 人均 ≤ ¥{group['budget']:.0f}"
+    )
 
     rule("② 五个人各填各的")
     for spec in MEMBERS:
@@ -110,8 +121,10 @@ def main() -> None:
         pref = client.put(f"/api/members/{member['id']}/preference", json=payload).json()
         hints = "、".join(pref["parsed_hints"]) or "（只用了滑杆）"
         spec["nickname"] = nickname
-        print(f"  {nickname:<6} 安静 {pref['quiet']:.2f} 花钱 {pref['price']:.2f} "
-              f"距离 {pref['near']:.2f}  读懂：{hints}")
+        print(
+            f"  {nickname:<6} 安静 {pref['quiet']:.2f} 花钱 {pref['price']:.2f} "
+            f"距离 {pref['near']:.2f}  读懂：{hints}"
+        )
 
     rule("③ 生成方案")
     out = client.post(f"/api/groups/{group['code']}/recommend").json()
@@ -120,12 +133,16 @@ def main() -> None:
         print(f"  {note}")
 
     for i, plan in enumerate(out["plans"], 1):
-        print(f"\n  方案 {i} · 共识 {(plan['consensus'] * 100):.0f}% · "
-              f"全程约 {plan['total_minutes'] / 60:.1f} 小时")
+        print(
+            f"\n  方案 {i} · 共识 {(plan['consensus'] * 100):.0f}% · "
+            f"全程约 {plan['total_minutes'] / 60:.1f} 小时"
+        )
         for j, item in enumerate(plan["items"]):
             arrow = "  └→ " if j else "  "
-            print(f"{arrow}{clock(item['offset_minutes'])}  {item['name']}"
-                  f"（{item['category']} · {item['area']} · 人均 ¥{item['avg_price']:.0f}）")
+            print(
+                f"{arrow}{clock(item['offset_minutes'])}  {item['name']}"
+                f"（{item['category']} · {item['area']} · 人均 ¥{item['avg_price']:.0f}）"
+            )
             print(f"          {item['blurb']}")
         print(f"     {plan['explanation']}")
         per = "  ".join(f"{k} {v * 100:.0f}" for k, v in plan["per_member"].items())

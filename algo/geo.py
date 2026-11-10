@@ -12,12 +12,12 @@ import math
 EARTH_RADIUS_KM = 6371.0
 
 # 深圳的粗略通行参数，来源于经验值，仅用于兜底估算。
-METRO_SPEED_KMH = 26.0        # 含站停的地铁平均速度
-METRO_DETOUR = 1.35           # 地铁线路绕行系数
-METRO_ACCESS_MIN = 8.0        # 进出站 + 步行接驳
-DRIVE_SPEED_KMH = 24.0        # 市区驾车平均速度（含拥堵）
+METRO_SPEED_KMH = 26.0  # 含站停的地铁平均速度
+METRO_DETOUR = 1.35  # 地铁线路绕行系数
+METRO_ACCESS_MIN = 8.0  # 进出站 + 步行接驳
+DRIVE_SPEED_KMH = 24.0  # 市区驾车平均速度（含拥堵）
 DRIVE_DETOUR = 1.25
-DRIVE_PARK_MIN = 8.0          # 找车位 + 停车
+DRIVE_PARK_MIN = 8.0  # 找车位 + 停车
 WALK_SPEED_KMH = 4.8
 WALK_MAX_KM = 1.2
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
@@ -30,9 +30,7 @@ def _nickify(payload: dict, group: Group) -> dict:
 
     out = dict(payload)
     out["worst_member"] = name_of(payload.get("worst_member") or "有人")
-    out["per_member"] = {
-        name_of(k): v for k, v in (payload.get("per_member") or {}).items()
-    }
+    out["per_member"] = {name_of(k): v for k, v in (payload.get("per_member") or {}).items()}
     return out
 
 

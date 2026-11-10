@@ -59,9 +59,7 @@ def group_to_out(group: Group) -> GroupOut:
         weather=group.weather,
         window_minutes=group.window_minutes,
         created_at=group.created_at,
-        members=[
-            MemberOut.of(m, filled=m.preference is not None) for m in group.members
-        ],
+        members=[MemberOut.of(m, filled=m.preference is not None) for m in group.members],
     )
 
 
@@ -152,8 +150,15 @@ def save_preference(
         db.add(rec)
 
     for key in (
-        "quiet", "price", "near", "max_price", "exclude_tags",
-        "require_indoor", "with_kids", "has_car", "free_text",
+        "quiet",
+        "price",
+        "near",
+        "max_price",
+        "exclude_tags",
+        "require_indoor",
+        "with_kids",
+        "has_car",
+        "free_text",
     ):
         setattr(rec, key, data.get(key))
 
@@ -180,8 +185,15 @@ def read_preference(member_id: int, db: Session = Depends(get_db)) -> Preference
     rec = member.preference
     if rec is None:
         return PreferenceOut(
-            quiet=0.5, price=0.5, near=0.5, max_price=None, exclude_tags=[],
-            require_indoor=False, with_kids=False, has_car=False, free_text="",
+            quiet=0.5,
+            price=0.5,
+            near=0.5,
+            max_price=None,
+            exclude_tags=[],
+            require_indoor=False,
+            with_kids=False,
+            has_car=False,
+            free_text="",
         )
     return PreferenceOut(
         quiet=rec.quiet,
@@ -218,24 +230,42 @@ def parse_text(payload: dict) -> PreferenceOut:
 # 示例局：五个口味互相冲突的人，正是产品要解决的场景
 DEMO_MEMBERS: tuple[dict, ...] = (
     {
-        "nickname": "小林", "quiet": 0.85, "price": 0.25, "near": 0.2,
+        "nickname": "小林",
+        "quiet": 0.85,
+        "price": 0.25,
+        "near": 0.2,
         "free_text": "想安静点，下雨天别走太远，人均 100 以内",
     },
     {
-        "nickname": "阿May", "quiet": 0.35, "price": 0.75, "near": 0.6,
+        "nickname": "阿May",
+        "quiet": 0.35,
+        "price": 0.75,
+        "near": 0.6,
         "free_text": "想热闹一点，可以跑远",
     },
     {
-        "nickname": "老王", "quiet": 0.5, "price": 0.3, "near": 0.35,
-        "with_kids": True, "free_text": "带娃，别吃辣",
+        "nickname": "老王",
+        "quiet": 0.5,
+        "price": 0.3,
+        "near": 0.35,
+        "with_kids": True,
+        "free_text": "带娃，别吃辣",
     },
     {
-        "nickname": "Cici", "quiet": 0.6, "price": 0.55, "near": 0.8,
-        "exclude_tags": ["海鲜"], "free_text": "海鲜过敏",
+        "nickname": "Cici",
+        "quiet": 0.6,
+        "price": 0.55,
+        "near": 0.8,
+        "exclude_tags": ["海鲜"],
+        "free_text": "海鲜过敏",
     },
     {
-        "nickname": "大熊", "quiet": 0.4, "price": 0.5, "near": 0.5,
-        "has_car": True, "free_text": "我开车，可以带三个人",
+        "nickname": "大熊",
+        "quiet": 0.4,
+        "price": 0.5,
+        "near": 0.5,
+        "has_car": True,
+        "free_text": "我开车，可以带三个人",
     },
 )
 

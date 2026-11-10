@@ -10,7 +10,6 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # ---------- 建局 ----------
 
 
@@ -31,7 +30,7 @@ class MemberOut(BaseModel):
     filled: bool = Field(default=False, description="是否已填偏好")
 
     @classmethod
-    def of(cls, member, filled: bool) -> "MemberOut":
+    def of(cls, member, filled: bool) -> MemberOut:
         return cls(id=member.id, nickname=member.nickname, filled=filled)
 
 

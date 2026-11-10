@@ -144,7 +144,7 @@ def merge_hints(base: dict, hints: ParsedHints) -> MergeResult:
         if value is None:
             return
         if sensitive and merged.get(key) not in (None, 0.5):
-            return          # 用户已经手动设过，尊重用户
+            return  # 用户已经手动设过，尊重用户
         merged[key] = value
         result.applied.append(key)
 

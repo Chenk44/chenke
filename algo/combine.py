@@ -97,7 +97,7 @@ def build_plans(
     pois: list[POI],
     prefs: list[Preference],
     matrix: dict[str, dict[str, float]],
-    consensus: dict[str, "Consensus"],  # noqa: F821 - 避免循环导入
+    consensus: dict[str, Consensus],  # noqa: F821 - 避免循环导入
     origin: tuple[float, float],
     group_size: int,
     window_minutes: float = 360.0,
