@@ -39,6 +39,15 @@ def test_health(client):
     assert resp.json()["status"] == "ok"
 
 
+def test_netinfo_returns_lan_addresses(client):
+    """前端靠它告诉用户「该把哪个地址发给朋友」，所以必须是列表、且不含回环地址。"""
+    resp = client.get("/api/netinfo")
+    assert resp.status_code == 200
+    ips = resp.json()["lan_ips"]
+    assert isinstance(ips, list)
+    assert all(isinstance(ip, str) and not ip.startswith("127.") for ip in ips)
+
+
 def test_group_code_is_short_and_readable(client):
     group = _new_group(client)
     code = group["code"]

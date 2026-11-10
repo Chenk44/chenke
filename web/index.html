@@ -568,12 +568,28 @@ async function renderGroupView() {
         <b style="color:var(--warn,#e0a33e)">注意</b>：你现在用的是本机地址（${esc(location.hostname)}），
         这条链接只有你自己能打开。让朋友先打开同一个网址，再输邀请码
         <b style="color:var(--brand);letter-spacing:2px">${esc(group.code)}</b>。
+        <div id="lan-hint" style="margin-top:8px"></div>
       </div>` : ""}
       <div class="err" id="group-err"></div>
     </div>
     ${(result && result.notes || []).map((n) => `<div class="card" style="padding:12px 16px"><div class="muted">${esc(n)}</div></div>`).join("")}
     ${planHtml ? `<div class="card"><h2>三个方案<span class="hint">点投票，等群里都投完</span></h2>${planHtml}</div>` : ""}
     ${topTable}`;
+
+  // 用本机地址访问时，把「该发给朋友的局域网地址」直接算出来给他
+  if (LOCAL_HOST) {
+    api("/netinfo")
+      .then((n) => {
+        const box = document.getElementById("lan-hint");
+        const ip = (n.lan_ips || [])[0];
+        if (!box || !ip) return;
+        const port = location.port ? ":" + location.port : "";
+        const url = `http://${ip}${port}/${location.hash}`;
+        box.innerHTML = `换成这个地址打开，同一 WiFi 的朋友也能用：` +
+          `<a href="${esc(url)}" style="color:var(--brand);word-break:break-all">${esc(url)}</a>`;
+      })
+      .catch(() => {});
+  }
 
   document.getElementById("btn-invite").onclick = async () => {
     const url = location.origin + location.pathname + "#g/" + group.code;

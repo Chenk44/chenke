@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import socket
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -52,6 +53,38 @@ app.include_router(pois.router)
 def health() -> dict:
     """部署健康检查。GitHub Actions 和容器探针都用它。"""
     return {"status": "ok", "app": settings.app_name, "version": settings.app_version}
+
+
+def _lan_ips() -> list[str]:
+    """本机的局域网 IPv4（尽力而为，拿不到就返回空列表）。
+
+    用途：用户用 127.0.0.1 打开页面时，前端可以把「该发给朋友的地址」显示出来，
+    省得他们对着 localhost 链接发呆。
+    """
+    ips: set[str] = set()
+    try:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            sock.connect(("223.5.5.5", 80))  # 不会真的发包，只让系统选出出口网卡
+            ips.add(sock.getsockname()[0])
+        finally:
+            sock.close()
+    except OSError:
+        pass
+    try:
+        for info in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            addr = info[4][0]
+            if not addr.startswith("127."):
+                ips.add(addr)
+    except OSError:
+        pass
+    return sorted(ips)
+
+
+@app.get("/api/netinfo", tags=["meta"])
+def netinfo() -> dict:
+    """本机可用于分享的局域网地址。纯读操作，不暴露任何敏感信息。"""
+    return {"lan_ips": _lan_ips()}
 
 
 # 静态前端（web/）。放在最后注册，避免抢走 /api 路由。
