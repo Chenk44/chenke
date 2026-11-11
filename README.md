@@ -1,6 +1,6 @@
-# 众口 · 一群人去哪玩
+# 尘客 · 一群人去哪玩
 
-> 众口不再难调。
+> 同是尘客，同走一程。
 
 **给一群人（而不是一个人）推荐去哪玩。** 建个局，把链接甩到群里，每个人各填各的口味，
 系统输出 3 个「地点组合 + 动线」方案，每个方案都告诉你：大家的共识度多少、谁让步最多，
@@ -8,15 +8,6 @@
 
 一个人做推荐，是"我喜欢什么"；一群人做决策，是"我们能接受什么"。
 这中间的差别，就是这个项目存在的理由。
-
-![首屏](docs/preview-home.png)
-
-<details>
-<summary>点开看方案的完整样子（真实运行截图，示例局 5 个人）</summary>
-
-![方案页](docs/preview-plans.png)
-
-</details>
 
 ---
 
@@ -35,14 +26,14 @@
 这不是"找不到好地方"的问题。**是"五个人的偏好没法合成一个决定"的问题。**
 点评、小红书、高德都能回答"哪里好"，但没有一个产品回答"**我们**去哪好"。
 
-「众口」只做这一件事，所以它能做得很深：
+「尘客」只做这一件事，所以它能做得很深：
 
 | 现有产品 | 回答的问题 | 输出 |
 | --- | --- | --- |
 | 大众点评 | 这个地方好不好 | 一个地点的评分 |
 | 小红书 | 别人去哪玩了 | 一堆笔记 |
 | 高德 | 怎么过去 | 一条路线 |
-| **众口** | **我们这群人去哪好** | **一组可执行的方案 + 谁让步了** |
+| **尘客** | **我们这群人去哪好** | **一组可执行的方案 + 谁让步了** |
 
 ## 二、30 秒看懂它怎么用
 
@@ -69,7 +60,7 @@
 ```
 
 两个方案平均分都是 0.63，但一个让某个人只有 0.1 分，另一个人人 0.6 分以上——
-前者看起来"还行"，实际上是有人被牺牲了。「众口」会选后者，并且**明确告诉你是谁让步了**。
+前者看起来"还行"，实际上是有人被牺牲了。「尘客」会选后者，并且**明确告诉你是谁让步了**。
 这是"一个人的推荐"和"一群人的决策"的分界线。
 
 **2）两条独立的聚合规则交叉验证**
@@ -126,36 +117,81 @@ Windows 用户也可以直接双击/运行仓库根目录的 `run.ps1`，它会�
 python -m pytest -q
 ```
 
-66 个测试，覆盖效用函数、聚合规则、组合搜索、一句话解析和全部 API 端点。
+68 个测试，覆盖效用函数、聚合规则、组合搜索、一句话解析和全部 API 端点。
 每个测试都对应文档里的一句话，改坏了 CI 会红。
 
 ## 五、项目结构
 
+四层：**纯算法包 → Web 壳 → 一张数据表 → 单页前端**。分层的唯一目的是——
+让算法能脱离框架单独测试。下面的行数是 `Get-Content | Measure-Object -Line` 数出来的真实值。
+
 ```
 .
-├── algo/                    # 算法核心：零第三方依赖，可独立 import 和测试
-│   ├── types.py             # POI / Preference / Plan 等数据结构
-│   ├── geo.py               # 球面距离 + 通行时间估算（含地铁/驾车差异）
-│   ├── utility.py           # 单人效用函数 U(地点, 偏好)
-│   ├── aggregate.py         # 共识分、Borda、minimax regret
-│   ├── combine.py           # 组合与动线搜索、人话解释生成
-│   ├── pipeline.py          # 一次完整推荐的编排
-│   └── loader.py            # 读 CSV + 启动即校验
-├── backend/app/             # Web 层
-│   ├── main.py              # FastAPI 入口
-│   ├── models.py            # ORM：局、成员、偏好、地点、方案、投票、评价
-│   ├── schemas.py           # 请求/响应模型（自动生成 OpenAPI）
-│   ├── services/nlp.py      # 一句话 → 约束（规则版，可测）
-│   └── routers/             # groups / plans / pois 三组接口
-├── data/pois_shenzhen.csv   # 49 个深圳地点的人工标注表（本项目最核心的资产）
-├── web/index.html           # 单页前端，零构建、零依赖
-├── tests/                   # 66 个测试
-├── scripts/                 # seed.py（灌数据）、demo.py（命令行演示）、layout_probe.py（移动端布局体检）
-└── docs/                    # 算法说明书、数据说明、接口说明、运行截图
+├── algo/                        801 行  纯 Python，不 import 任何 Web / ORM 库
+│   ├── types.py                  82     POI / Preference / Plan 三个数据结构
+│   ├── geo.py                    49     球面距离 + 通行时间估算（地铁/驾车两套参数）
+│   ├── utility.py               112     单人效用 U(地点, 偏好)：三根滑杆 → 一个分数
+│   ├── aggregate.py             114     共识分、Borda 计数、minimax regret、排序一致度
+│   ├── combine.py               184     组合与动线搜索、多样性去重、人话解释
+│   ├── pipeline.py              130     把上面几步编排成一次 run()
+│   └── loader.py                130     读 CSV 并逐列校验（脏数据启动即报错）
+├── backend/app/               1 100 行  Web 层，只做三件事：校验、读写库、转格式
+│   ├── main.py                   92     FastAPI 入口、CORS、静态挂载、422 文案、/api/netinfo
+│   ├── config.py                 25     pydantic-settings 读 .env
+│   ├── db.py                     30     引擎与建表
+│   ├── models.py                129     7 张表：局/成员/偏好/地点/方案/投票/评价
+│   ├── schemas.py               135     请求响应模型（OpenAPI 文档就是它生成的）
+│   ├── routers/groups.py        280     建局、加入、填偏好、一句话解析、示例局
+│   ├── routers/plans.py         119     生成方案、拉方案、投票、计票
+│   ├── routers/pois.py           67     地点列表、商圈列表、地点评价
+│   ├── services/nlp.py          136     一句话 → 滑杆修正（规则版，3 毫秒，可测）
+│   └── services/recommender.py   83     ORM ↔ algo 的唯一翻译层
+├── data/pois_shenzhen.csv       8 KB    49 个深圳地点 × 18 列（本项目最核心的资产）
+├── web/index.html               626 行  单页前端，零构建、零依赖、不需要 npm
+├── tests/                       510 行  68 个用例：算法 30、接口 21、解析 17
+│   ├── conftest.py               27     先设 DATABASE_URL 再 import app（顺序很关键）
+│   ├── test_algo.py             256     效用、聚合、组合、时间线、加载器校验
+│   ├── test_api.py              174     17 个接口（16 条路径）的端到端行为
+│   └── test_nlp.py               53     一句话解析的边界
+├── scripts/                     310 行
+│   ├── seed.py                   72     CSV → 数据库，可重复执行（--reset 清空重来）
+│   ├── demo.py                  147     命令行端到端演示：不开浏览器也能看到算法在干什么
+│   └── layout_probe.py           90     移动端布局体检（CDP 量宽度、找越界元素）
+├── docs/
+│   ├── ALGORITHM.md             229     算法说明书：从痛点推到公式
+│   ├── API.md                   220     17 个接口 + 真实响应样例
+│   ├── DATA.md                   82     数据来源、标注口径、合规说明
+│   └── preview-*.png                    README 用的两张真实截图
+├── .github/workflows/ci.yml      35     push 即跑：ruff → 灌数据 → 68 测试 → 真起服务 curl
+├── run.ps1 / run.sh                     一键启动（Windows / macOS+Linux）
+├── Dockerfile                    22     多阶段构建 + 非 root 用户
+└── requirements.txt / pyproject.toml    依赖 7 个；pytest 与 ruff 配置
 ```
 
-**为什么 `algo/` 不依赖 FastAPI 也不依赖 SQLAlchemy**：算法是这个项目的价值所在，
-它必须能被单独测试、单独跑、单独替换数据源。Web 层只是它的一个壳。
+**一次「生成方案」怎么穿过这些文件**——这是理解整个项目最快的方式：
+
+```
+web/index.html          点「生成方案」
+  → routers/plans.py            读局、读成员、读偏好
+  → services/recommender.py     POIRecord→POI，PreferenceRecord→Preference
+  → algo/pipeline.py            recommend()
+        ├── utility.py          每人给每个地点打分
+        ├── aggregate.py        合成共识分 + Borda + minimax regret
+        ├── geo.py              算地点间通行时间
+        └── combine.py          枚举组合与顺序，选出 3 个方案
+  → models.py                   写进 PlanRecord（JSON 快照，投票要引用它）
+  → web/index.html              渲染成带时间线的方案卡
+```
+
+三个刻意的分层决定，答辩时可以直接讲：
+
+1. **`algo/` 不 import FastAPI，也不 import SQLAlchemy**。801 行算法被 47 个算法与解析测试直接覆盖，
+   跑测试不需要起服务、不需要连着数据库、不需要网络。算法是这个项目的价值，它必须能单独被验证。
+2. **`services/recommender.py` 是唯一同时认识两边的文件**。它导出 `record_to_poi` /
+   `member_to_preference` / `run_recommendation` 三个函数；`algo` 反向完全不认识数据库。
+   想换存储（比如从 SQLite 换到 Postgres），只改这一个文件。
+3. **`web/index.html` 是单文件、零构建**。评委 clone 下来不用 `npm install` 就有完整界面，
+   代价是可维护性——这个取舍在 10 天工期下是划算的，写在 `docs/ALGORITHM.md` 的取舍一节。
 
 ## 六、数据从哪来（合规性说明）
 
@@ -199,14 +235,14 @@ python -m pytest -q
 ## 八、部署
 
 ```bash
-docker build -t zhongkou .
-docker run -p 8000:8000 zhongkou
+docker build -t chenke .
+docker run -p 8000:8000 chenke
 ```
 
 生产环境把 `DATABASE_URL` 换成 PostgreSQL 即可，代码里没有 SQLite 专有语句。
 其余配置见 `.env.example`。
 
-## 九、已知局限（写在前面，比被问出来好）
+## 九、已知局限
 
 1. **只做了深圳。** 地点表是人工标注的，换个城市需要重新标 2 天。这是刻意的取舍：
    十个城市各 20 条，不如一个城市 49 条标得准。
