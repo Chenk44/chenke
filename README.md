@@ -1,5 +1,13 @@
 # 尘客 · 一群人去哪玩
 
+<p>
+  <a href="https://github.com/Chenk44/-/actions/workflows/ci.yml"><img src="https://github.com/Chenk44/-/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/python-3.10%2B-3776ab" alt="python 3.10+">
+  <img src="https://img.shields.io/badge/tests-68%20passed-4dd4ac" alt="68 tests passed">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license">
+  <img src="https://img.shields.io/badge/data-49%20POIs%20%C2%B7%2019%20areas-orange" alt="49 POIs">
+</p>
+
 > 同是尘客，同走一程。
 
 **给一群人（而不是一个人）推荐去哪玩。** 建个局，把链接甩到群里，每个人各填各的口味，
