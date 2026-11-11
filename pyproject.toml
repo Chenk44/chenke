@@ -1,7 +1,7 @@
 [project]
-name = "zhongkou"
+name = "chenke"
 version = "0.1.0"
-description = "众口：为一群人（而不是单个人）推荐去哪玩"
+description = "尘客：为一群人（而不是单个人）推荐去哪玩"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 

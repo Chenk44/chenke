@@ -10,7 +10,7 @@ FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    DATABASE_URL=sqlite:////app/data/zhongkou.db
+    DATABASE_URL=sqlite:////app/data/chenke.db
 
 WORKDIR /app
 COPY --from=builder /install /usr/local

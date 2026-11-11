@@ -1,7 +1,7 @@
 """pytest 全局配置。
 
 关键点：在导入 app 之前把 DATABASE_URL 指向测试库，
-否则测试会写到开发用的 zhongkou.db 里，把你的演示数据搞花。
+否则测试会写到开发用的 chenke.db 里，把你的演示数据搞花。
 """
 
 from __future__ import annotations

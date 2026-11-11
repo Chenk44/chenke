@@ -1,4 +1,4 @@
-"""命令行端到端演示：不打开浏览器也能看到「众口」在干什么。
+"""命令行端到端演示：不打开浏览器也能看到「尘客」在干什么。
 
 用法：
     python -m scripts.demo
@@ -94,7 +94,7 @@ def main() -> None:
 
     health = client.get("/api/health").json()
     poi_count = len(client.get("/api/pois").json())
-    print(f"众口 v{health['version']} · 地点数 {poi_count}")
+    print(f"尘客 v{health['version']} · 地点数 {poi_count}")
 
     rule("① 建局")
     group = client.post(

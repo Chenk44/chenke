@@ -14,6 +14,7 @@ env/
 # 测试与工具
 .pytest_cache/
 .ruff_cache/
+pytest-cache-files-*/
 .coverage
 htmlcov/
 tests/_test.db

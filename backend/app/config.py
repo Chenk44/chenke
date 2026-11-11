@@ -12,11 +12,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
 
-    app_name: str = "众口"
+    app_name: str = "尘客"
     app_version: str = "0.1.0"
 
     # 默认用 SQLite，零依赖即可跑起来；部署时改成 postgresql+psycopg://...
-    database_url: str = f"sqlite:///{(BASE_DIR / 'zhongkou.db').as_posix()}"
+    database_url: str = f"sqlite:///{(BASE_DIR / 'chenke.db').as_posix()}"
 
     # 前端开发时跨域用；生产环境挂同域可以保持 "*"
     cors_origins: str = "*"
