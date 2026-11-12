@@ -195,6 +195,7 @@ python -m pytest -q
 │   ├── ALGORITHM.md             468     算法说明书：从痛点推到公式
 │   ├── API.md                   350     17 个接口 + 真实响应样例
 │   ├── DATA.md                  139     数据来源、标注口径、合规说明
+│   ├── evidence.html                   答辩证据页：一页看完所有数字 + 复现命令（离线单文件）
 │   └── preview-*.png                    README 用的两张真实截图
 ├── .github/workflows/ci.yml      44     push 即跑：ruff → 灌数据 → 125 测试 → 真起服务 curl
 ├── run.ps1 / run.sh                     一键启动（Windows / macOS+Linux）
@@ -226,6 +227,9 @@ web/index.html          点「生成方案」
    想换存储（比如从 SQLite 换到 Postgres），只改这一个文件。
 3. **`web/index.html` 是单文件、零构建**。评委 clone 下来不用 `npm install` 就有完整界面，
    代价是可维护性——这个取舍在 10 天工期下是划算的，写在 `docs/ALGORITHM.md` 的取舍一节。
+
+> 答辩时如果想直接投屏：打开 `docs/evidence.html`（离线单文件，含所有关键数字与复现命令），
+> 也可以用它「打印 → 另存为 PDF」当材料交。
 
 ## 六、数据从哪来（合规性说明）
 
