@@ -1,16 +1,16 @@
 ﻿<#
 把本机正在跑的服务临时开到公网，让不在同一个 WiFi 的朋友也能填偏好。
 
-    powershell -ExecutionPolicy Bypass -File .\share.ps1              # 默认：SSH 隧道（走 443）
-    powershell -ExecutionPolicy Bypass -File .\share.ps1 -Cloudflare  # 备选：Cloudflare 隧道
+    powershell -ExecutionPolicy Bypass -File .\share.ps1                # 默认：serveo（域名不轮换）
+    powershell -ExecutionPolicy Bypass -File .\share.ps1 -LocalhostRun  # 备选：localhost.run
+    powershell -ExecutionPolicy Bypass -File .\share.ps1 -Cloudflare    # 备选：Cloudflare
 
-两种方式怎么选：
-    * SSH（默认，localhost.run）：只用系统的 ssh 客户端，不下载任何东西，
-      走的是 443 端口——校园网、手机热点、公司网络基本都放行。缺点是免费域名
-      过一段时间会轮换，长时间挂机可能中途换地址。
-    * Cloudflare：速度更快、域名更稳定，但要能出 TCP/UDP 7844。
-      如果日志里刷 "DialContext error: i/o timeout" 或 "no recent network activity"，
-      就是这个端口被网络挡住了，换回默认的 SSH 方式。
+三种方式怎么选：
+    * serveo（默认）：只用系统的 ssh 客户端，走 443 端口，不下载任何东西，
+      域名在隧道存活期间固定不变（这点很重要——域名一换，朋友手里的链接就废了）。
+    * localhost.run：同样走 443，但免费版会周期性轮换域名，适合短时间试一下。
+    * Cloudflare：速度最快、域名最稳，但要能出 TCP/UDP 7844；
+      如果日志里刷 "i/o timeout" / "no recent network activity"，就是端口被挡了。
 
 共同点：地址每次启动都不一样，关掉窗口就断；本机服务必须一直开着。
 #>
@@ -18,6 +18,7 @@
 param(
     [int]$Port = 8000,
     [switch]$Cloudflare,
+    [switch]$LocalhostRun,
     [switch]$SkipServer
 )
 
@@ -73,10 +74,16 @@ if ($Cloudflare) {
     Write-Host "正在开 Cloudflare 隧道，稍等十秒左右…" -ForegroundColor Cyan
     & $exe tunnel --url "http://127.0.0.1:$Port" --no-autoupdate
 } else {
-    Write-Host "正在开 SSH 隧道（localhost.run），稍等五秒左右…" -ForegroundColor Cyan
-    Write-Host "地址会以 https://xxxx.lhr.life 的形式出现在下面。" -ForegroundColor DarkGray
-    Write-Host ""
     $ssh = 'C:\Windows\System32\OpenSSH\ssh.exe'
     if (-not (Test-Path $ssh)) { $ssh = 'ssh' }
-    & $ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=20 -R "80:127.0.0.1:$Port" nokey@localhost.run
+    if ($LocalhostRun) {
+        Write-Host "正在开 SSH 隧道（localhost.run），稍等五秒左右…" -ForegroundColor Cyan
+        Write-Host "注意：localhost.run 免费版会把域名轮换掉，跑着跑着朋友就打不开了。" -ForegroundColor Yellow
+        & $ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=20 -R "80:127.0.0.1:$Port" nokey@localhost.run
+    } else {
+        Write-Host "正在开 SSH 隧道（serveo.net），稍等五秒左右…" -ForegroundColor Cyan
+        Write-Host "地址会以 https://xxx.serveousercontent.com 的形式出现在下面。" -ForegroundColor DarkGray
+        Write-Host ""
+        & $ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=20 -R "80:127.0.0.1:$Port" serveo.net
+    }
 }

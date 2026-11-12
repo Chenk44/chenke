@@ -283,10 +283,12 @@ docker run -p 8000:8000 chenke
 powershell -ExecutionPolicy Bypass -File .\share.ps1
 ```
 
-它会先确认服务活着，再用系统自带的 `ssh` 通过 localhost.run 开一条隧道
-（走 443 端口，不下载任何东西），把 `https://xxx.lhr.life` 这样的地址打印出来。
-如果这个网络环境能出 7844 端口，加 `-Cloudflare` 可以换用 Cloudflare 隧道，
-速度更快、域名更稳：
+它会先确认服务活着，再用系统自带的 `ssh` 通过 serveo.net 开一条隧道
+（走 443 端口，不下载任何东西，**隧道活着期间域名不变**），
+把 `https://xxx.serveousercontent.com` 这样的地址打印出来。
+
+两个备选：`-LocalhostRun` 用 localhost.run（免费版会轮换域名，只适合短时间试），
+`-Cloudflare` 用 Cloudflare 隧道（更快更稳，但要网络放行 7844 端口）：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\share.ps1 -Cloudflare
