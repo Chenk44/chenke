@@ -73,4 +73,6 @@ Write-Host "正在开隧道，稍等十秒左右，下面这个地址就是发�
 Write-Host "（地址是 https://xxxx.trycloudflare.com 这种，Ctrl+C 或关窗口就断）" -ForegroundColor DarkGray
 Write-Host ""
 
-& $exe tunnel --url "http://127.0.0.1:$Port" --no-autoupdate
+# 用 http2 而不是默认的 quic：笔记本休眠或切换网络之后，quic 的 UDP 连接经常半死，
+# 表现为日志里一直 "Retrying connection"、外网打不开但本机好好的；http2 走 TCP，重连快得多。
+& $exe tunnel --url "http://127.0.0.1:$Port" --no-autoupdate --protocol http2
