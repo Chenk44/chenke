@@ -3,7 +3,7 @@
 <p>
   <a href="https://github.com/Chenk44/chenke/actions/workflows/ci.yml"><img src="https://github.com/Chenk44/chenke/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-3776ab" alt="python 3.10+">
-  <img src="https://img.shields.io/badge/tests-85%20passed-4dd4ac" alt="85 tests passed">
+  <img src="https://img.shields.io/badge/tests-93%20passed-4dd4ac" alt="93 tests passed">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license">
   <img src="https://img.shields.io/badge/data-201%20POIs%20%C2%B7%2020%20areas-orange" alt="201 POIs">
 </p>
@@ -56,7 +56,8 @@
 
 1. **建局**：起个名、选出发商圈、选天气（下雨 / 高温）、填人均预算 → 拿到 6 位邀请码。
 2. **各填各的**：三个滑杆（安静↔热闹 / 省钱↔舍得 / 近↔远）+ 硬条件（想待室内 / 想出去走走、带娃、开车、忌口）
-   + 一句话（"下雨天别走太远，人均 100 以内"，系统会把它解析成约束）。
+   + 一句话（"想吃火锅，晚上七点出发，最多三小时"——系统把它拆成 16 个结构化约束，
+   连"想吃火锅"这种正向愿望和"不要玩桌游"这种排除都会进排序）。
 3. **出方案**：点一下，得到 3 个方案，每个是 2~3 个地点连成的动线，带时刻表，例如
    `14:18 %Arabica 咖啡 → 15:20 诚品生活 → 16:52 迷之密室`，
    附一句人话解释和每个人的满意度。
@@ -134,7 +135,7 @@ Windows 用户也可以直接双击/运行仓库根目录的 `run.ps1`，它会�
 python -m pytest -q
 ```
 
-85 个测试，覆盖效用函数、聚合规则、组合搜索、一句话解析和全部 API 端点。
+93 个测试，覆盖效用函数、聚合规则、组合搜索、一句话解析和全部 API 端点。
 每个测试都对应文档里的一句话，改坏了 CI 会红。
 
 ## 五、项目结构
@@ -165,10 +166,10 @@ python -m pytest -q
 │   └── services/recommender.py  104     ORM ↔ algo 的唯一翻译层
 ├── data/pois_shenzhen.csv      34 KB     201 个深圳地点 × 18 列（本项目最核心的资产）
 ├── web/index.html               738 行  单页前端，零构建、零依赖、不需要 npm
-├── tests/                       828 行  85 个用例：算法、聚合、组合、接口、解析
+├── tests/                       926 行  93 个用例：算法、聚合、组合、接口、解析
 │   ├── conftest.py               39     先设 DATABASE_URL 再 import app（顺序很关键）
-│   ├── test_algo.py             369     效用、聚合、组合、时间线、加载器校验
-│   ├── test_api.py              272     全部接口的端到端行为
+│   ├── test_algo.py             423     效用、聚合、组合、时间线、加载器校验
+│   ├── test_api.py              316     全部接口的端到端行为
 │   └── test_nlp.py              148     一句话解析的边界（含否定与条件句）
 ├── scripts/                   1 230 行
 │   ├── seed.py                   92     CSV → 数据库，可重复执行（--reset 清空重来）
@@ -183,7 +184,7 @@ python -m pytest -q
 │   ├── API.md                   270     17 个接口 + 真实响应样例
 │   ├── DATA.md                  106     数据来源、标注口径、合规说明
 │   └── preview-*.png                    README 用的两张真实截图
-├── .github/workflows/ci.yml      35     push 即跑：ruff → 灌数据 → 85 测试 → 真起服务 curl
+├── .github/workflows/ci.yml      35     push 即跑：ruff → 灌数据 → 93 测试 → 真起服务 curl
 ├── run.ps1 / run.sh                     一键启动（Windows / macOS+Linux）
 ├── Dockerfile                    22     多阶段构建 + 非 root 用户
 └── requirements.txt / pyproject.toml    依赖 7 个；pytest 与 ruff 配置
@@ -275,9 +276,10 @@ docker run -p 8000:8000 chenke
 4. **一句话解析是规则版，不是大模型。** 这是刻意的：规则可测、3 毫秒返回、断网可用、
    失败模式是"漏识别"而不是"胡说八道"。接大模型的正确做法是让它输出同样的结构化约束，
    规则版本做兜底，而不是让它直接决定推荐结果。
-5. **解析出来的 16 个字段，只有 11 个真正进了排序。** 品类偏好、时长上限、开始时间、
-   "想拍照 / 想坐着"这 5 个目前只做提示，还没有对应的表字段——这是已知的、有明确修法的欠账，
-   不是设计缺陷的借口。
+5. **文字里的约束是"软"的，不是硬过滤。** 品类偏好只在效用分里加 0.04–0.07，
+   时长上限按超出比例每小时扣 0.20，出发时间只挪时间线起点。这样做是因为一句话解析有误差，
+   硬过滤一次误判就把好地点全毙掉；代价是"我说了想吃火锅"偶尔仍会混进别的类型。
+   想改成硬过滤，只需把 `algo/utility.py: wants_poi` 的加分支换成乘 `HARD_PENALTY`。
 6. **201 条里有一半是"脚本先猜、人工复核"出来的。** 名字/坐标/评分/人均来自高德，
    室内外、安静度、适合人数这些是标出来的，个别地方会有误差（比如把一家日料店判成户外，
    我们已经在词表里修过一轮）。发现错标在 `data/pois_shenzhen.csv` 里改一行、重跑

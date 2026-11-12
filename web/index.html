@@ -207,10 +207,10 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
 
 const money = (v) => (v >= 1000 ? (v / 1000).toFixed(1) + "k" : Math.round(v));
 
-// 方案时间线默认从下午 2 点开始算
-const START_HOUR = 14;
-const fmtClock = (offsetMin) => {
-  const total = START_HOUR * 60 + Math.round(offsetMin || 0);
+// 出发时刻由后端按「全组最晚能出发的人」给出（plan.start_minute），默认下午 2 点
+const DEFAULT_START_MINUTE = 14 * 60;
+const fmtClock = (offsetMin, startMinute) => {
+  const total = (startMinute ?? DEFAULT_START_MINUTE) + Math.round(offsetMin || 0);
   const h = Math.floor(total / 60) % 24;
   const m = total % 60;
   return String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0");
@@ -564,7 +564,7 @@ async function renderGroupView() {
     const v = voteMap[plan.id] || { votes: 0, voters: [], winner: false };
     const items = plan.items.map((it) => `
       <li><span class="dot"></span>
-        <span class="what"><b>${fmtClock(it.offset_minutes)} · ${esc(it.name)}</b>
+        <span class="what"><b>${fmtClock(it.offset_minutes, plan.start_minute)} · ${esc(it.name)}</b>
           <div class="where">${esc(it.category)} · ${esc(it.area)} · ${it.indoor ? "室内" : "室外"} · ${esc(it.blurb)}</div></span>
         <span class="price">¥${money(it.avg_price)}</span></li>`).join("");
     const members = Object.entries(plan.per_member).map(([name, score]) =>

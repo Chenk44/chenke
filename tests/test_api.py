@@ -57,7 +57,6 @@ def test_bad_path_param_gets_a_readable_message(client):
     assert "参数不对" in detail
 
 
-
 def test_group_code_is_short_and_readable(client):
     group = _new_group(client)
     code = group["code"]
@@ -270,3 +269,48 @@ def test_page_always_offers_a_way_back_home(client):
     assert 'id="btn-home"' in html, "局内页面缺少返回首页的按钮"
     assert 'id="btn-pref-home"' in html, "填偏好页面缺少返回首页的按钮"
     assert "else if (state.code)" not in html, "路由里不应再把空 hash 当成「回到上次那个局」"
+
+
+def test_new_preference_fields_round_trip(client):
+    """一句话解析出来的五个字段必须真的落库、真的读得回来。"""
+    group = _new_group(client)
+    member = _join(client, group["code"], "小林")
+    saved = _fill(
+        client,
+        member["id"],
+        prefer_categories=["火锅"],
+        exclude_categories=["桌游"],
+        prefer_tags=["拍照"],
+        max_minutes=240,
+        start_hour=19,
+    )
+    assert saved["prefer_categories"] == ["火锅"]
+    assert saved["max_minutes"] == 240
+
+    again = client.get(f"/api/members/{member['id']}/preference").json()
+    assert again["exclude_categories"] == ["桌游"]
+    assert again["prefer_tags"] == ["拍照"]
+    assert again["start_hour"] == 19
+
+
+def test_free_text_fills_the_new_fields(client):
+    """真正的一句话走完整链路：解析 → 合并 → 落库。"""
+    group = _new_group(client)
+    member = _join(client, group["code"], "阿May")
+    saved = _fill(client, member["id"], free_text="想吃火锅，不要玩桌游，最多三小时")
+    assert saved["prefer_categories"] == ["火锅"]
+    assert saved["exclude_categories"] == ["桌游"]
+    assert saved["max_minutes"] == 180
+
+
+def test_recommendation_carries_the_start_time(client):
+    """前端拿 start_minute 把偏移量渲染成时刻，缺了它时间线会退回写死的 14:00。"""
+    group, members = _prepare(client, 3)
+    _fill(client, members[0]["id"], start_hour=19)
+    resp = client.post(f"/api/groups/{group['code']}/recommend")
+    assert resp.status_code == 200, resp.text
+    plans = resp.json()["plans"]
+    assert plans and plans[0]["start_minute"] >= 19 * 60
+
+    stored = client.get(f"/api/groups/{group['code']}/plans").json()
+    assert stored["plans"][0]["start_minute"] == plans[0]["start_minute"]

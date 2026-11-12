@@ -90,6 +90,12 @@ class PreferenceRecord(Base):
     indoor_pref: Mapped[int] = mapped_column(Integer, default=0)
     with_kids: Mapped[bool] = mapped_column(Boolean, default=False)
     has_car: Mapped[bool] = mapped_column(Boolean, default=False)
+    # 一句话解析出来的软约束，字段含义见 algo/types.py 的 Preference
+    prefer_categories: Mapped[list] = mapped_column(JSON, default=list)  # ["餐饮"]
+    exclude_categories: Mapped[list] = mapped_column(JSON, default=list)  # ["玩乐"]
+    prefer_tags: Mapped[list] = mapped_column(JSON, default=list)  # ["拍照"]
+    max_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 180
+    start_hour: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 19
     free_text: Mapped[str] = mapped_column(Text, default="")
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now()

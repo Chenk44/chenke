@@ -127,6 +127,29 @@ def _get_member_or_404(member_id: int, db: Session) -> Member:
     return member
 
 
+def _pref_out(rec: PreferenceRecord | None, hints: list[str] | None = None) -> PreferenceOut:
+    """记录 → 响应模型。没填过的人返回默认值，三处调用点共用一份。"""
+    if rec is None:
+        return PreferenceOut(parsed_hints=hints or [])
+    return PreferenceOut(
+        quiet=rec.quiet,
+        price=rec.price,
+        near=rec.near,
+        max_price=rec.max_price,
+        exclude_tags=list(rec.exclude_tags or []),
+        indoor_pref=rec.indoor_pref,
+        with_kids=rec.with_kids,
+        has_car=rec.has_car,
+        prefer_categories=list(rec.prefer_categories or []),
+        exclude_categories=list(rec.exclude_categories or []),
+        prefer_tags=list(rec.prefer_tags or []),
+        max_minutes=rec.max_minutes,
+        start_hour=rec.start_hour,
+        free_text=rec.free_text,
+        parsed_hints=hints or [],
+    )
+
+
 @router.put("/members/{member_id}/preference", response_model=PreferenceOut)
 def save_preference(
     member_id: int, payload: PreferenceIn, db: Session = Depends(get_db)
@@ -158,6 +181,11 @@ def save_preference(
         "indoor_pref",
         "with_kids",
         "has_car",
+        "prefer_categories",
+        "exclude_categories",
+        "prefer_tags",
+        "max_minutes",
+        "start_hour",
         "free_text",
     ):
         setattr(rec, key, data.get(key))
@@ -165,47 +193,13 @@ def save_preference(
     db.commit()
     db.refresh(rec)
 
-    return PreferenceOut(
-        quiet=rec.quiet,
-        price=rec.price,
-        near=rec.near,
-        max_price=rec.max_price,
-        exclude_tags=list(rec.exclude_tags or []),
-        indoor_pref=rec.indoor_pref,
-        with_kids=rec.with_kids,
-        has_car=rec.has_car,
-        free_text=rec.free_text,
-        parsed_hints=hints,
-    )
+    return _pref_out(rec, hints)
 
 
 @router.get("/members/{member_id}/preference", response_model=PreferenceOut)
 def read_preference(member_id: int, db: Session = Depends(get_db)) -> PreferenceOut:
     member = _get_member_or_404(member_id, db)
-    rec = member.preference
-    if rec is None:
-        return PreferenceOut(
-            quiet=0.5,
-            price=0.5,
-            near=0.5,
-            max_price=None,
-            exclude_tags=[],
-            indoor_pref=0,
-            with_kids=False,
-            has_car=False,
-            free_text="",
-        )
-    return PreferenceOut(
-        quiet=rec.quiet,
-        price=rec.price,
-        near=rec.near,
-        max_price=rec.max_price,
-        exclude_tags=list(rec.exclude_tags or []),
-        indoor_pref=rec.indoor_pref,
-        with_kids=rec.with_kids,
-        has_car=rec.has_car,
-        free_text=rec.free_text,
-    )
+    return _pref_out(member.preference)
 
 
 @router.post("/parse", response_model=PreferenceOut, tags=["nlp"])
@@ -222,6 +216,11 @@ def parse_text(payload: dict) -> PreferenceOut:
         indoor_pref=parsed.indoor_pref or 0,
         with_kids=bool(parsed.with_kids),
         has_car=bool(parsed.has_car),
+        prefer_categories=list(parsed.prefer_categories),
+        exclude_categories=list(parsed.exclude_categories),
+        prefer_tags=list(parsed.prefer_tags),
+        max_minutes=parsed.max_minutes,
+        start_hour=parsed.start_hour,
         free_text=text,
         parsed_hints=parsed.hints,
     )
@@ -312,6 +311,11 @@ def create_demo(db: Session = Depends(get_db)) -> DemoOut:
             "indoor_pref": 0,
             "with_kids": spec.get("with_kids", False),
             "has_car": spec.get("has_car", False),
+            "prefer_categories": [],
+            "exclude_categories": [],
+            "prefer_tags": [],
+            "max_minutes": None,
+            "start_hour": None,
             "free_text": spec["free_text"],
         }
         values = merge_hints(base, parse_constraints(spec["free_text"])).values

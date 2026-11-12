@@ -26,6 +26,44 @@ WEIGHTS = {
 # 硬约束被违反时的乘数。0.2 意味着「除非没有别的选择，否则不选它」。
 HARD_PENALTY = 0.2
 
+# 一句话里说「想吃火锅」「想拍照」时的加分。
+# 之所以是加分而不是硬过滤：用户随口提的偏好不该一票否决另外 200 个地点。
+CATEGORY_BONUS = 0.07
+TAG_BONUS = 0.04
+
+# 解析器认的是人话（火锅、桌游、KTV），数据集里只有 7 个品类，
+# 这里做一层词到品类的映射；映射不到的再按标签/名字兜底匹配。
+CATEGORY_ALIASES: dict[str, str] = {
+    "火锅": "餐饮",
+    "海鲜": "餐饮",
+    "烧烤": "餐饮",
+    "正餐": "餐饮",
+    "桌游": "玩乐",
+    "密室": "玩乐",
+    "剧本杀": "玩乐",
+    "KTV": "夜生活",
+    "酒吧": "夜生活",
+    "唱歌": "夜生活",
+    "商场": "玩乐",
+}
+
+
+def wants_poi(poi: POI, words: tuple[str, ...]) -> bool:
+    """这个词表是不是指向这个地点：先映射到品类，再退回标签/名字。"""
+    return any(
+        CATEGORY_ALIASES.get(word, word) == poi.category or word in poi.tags or word in poi.name
+        for word in words
+    )
+
+
+def excludes_poi(poi: POI, words: tuple[str, ...]) -> bool:
+    """排除时的匹配要比加分更严格。
+
+    说「不要玩桌游」是想避开桌游吧，不是想把密室、电玩、摩天轮一起毙掉，
+    所以只有说到真正的品类名（「不要玩乐」）才按品类排除。
+    """
+    return any(word == poi.category or word in poi.tags or word in poi.name for word in words)
+
 
 def _clip(x: float, lo: float = 0.0, hi: float = 1.0) -> float:
     return max(lo, min(hi, x))
@@ -94,6 +132,12 @@ def score_poi(
     if pref.with_kids:
         parts["带娃"] = WEIGHTS["kids"] * (1.0 if poi.kid_friendly else 0.0)
 
+    # 一句话里的正向偏好：加分，不加权（权重表保持 1.0 不变，答辩时好解释）
+    if pref.prefer_categories and wants_poi(poi, pref.prefer_categories):
+        parts["想去的品类"] = CATEGORY_BONUS
+    if pref.prefer_tags and poi.has_any_tag(set(pref.prefer_tags)):
+        parts["偏好标签"] = TAG_BONUS
+
     score = sum(parts.values())
     penalty_reasons: list[str] = []
 
@@ -108,6 +152,11 @@ def score_poi(
     if pref.exclude_tags and poi.has_any_tag(pref.hard_tags()):
         score *= HARD_PENALTY
         penalty_reasons.append("有忌口食材")
+
+    # 硬约束：明确说了「不要玩桌游」这种品类级排除
+    if pref.exclude_categories and excludes_poi(poi, pref.exclude_categories):
+        score *= HARD_PENALTY
+        penalty_reasons.append("说了不想去这类地方")
 
     # 硬约束：预算上限
     if pref.max_price is not None and poi.avg_price > pref.max_price:

@@ -367,3 +367,58 @@ def test_group_budget_flows_into_every_plan():
         p.max_price = 60
     rec = recommend(pois, prefs, origin=(22.518, 113.936))
     assert rec.plans, "预算再紧也要给出方案，不能空手而归"
+
+
+# ---------- 一句话里的正向偏好与硬性时长 ----------
+
+
+def test_saying_you_want_hotpot_lifts_hotpot_places():
+    """「想吃火锅」是加分项：火锅店该排到前面，但不该把别的地方判死刑。"""
+    plain = Preference("甲")
+    keen = Preference("甲", prefer_categories=("火锅",))
+    hotpot = make_poi(id="hot", name="某某火锅城", category="餐饮")
+    gallery = make_poi(id="art", name="某某美术馆", category="展览", indoor=True)
+
+    assert score_poi(hotpot, keen, 10).score > score_poi(hotpot, plain, 10).score
+    assert score_poi(gallery, keen, 10).score == score_poi(gallery, plain, 10).score
+
+
+def test_excluding_a_thing_is_narrower_than_excluding_the_category():
+    """说「不要玩桌游」只想避开桌游吧，不该顺手把密室、摩天轮一起毙掉。"""
+    boardgame = make_poi(id="bg", name="桌游吧(海岸城)", category="玩乐", indoor=True)
+    escape = make_poi(id="esc", name="迷之密室", category="玩乐", indoor=True)
+
+    picky = Preference("甲", exclude_categories=("桌游",))
+    assert score_poi(boardgame, picky, 10).score < score_poi(boardgame, Preference("甲"), 10).score
+    assert score_poi(escape, picky, 10).score == score_poi(escape, Preference("甲"), 10).score
+
+    whole_cat = Preference("乙", exclude_categories=("玩乐",))
+    assert score_poi(escape, whole_cat, 10).score < score_poi(escape, Preference("乙"), 10).score
+
+
+def test_a_personal_time_cap_shortens_the_plan():
+    """有人说「最多玩两小时」，方案就不该还给一条五小时的动线。"""
+    pois, prefs = _small_setup()
+    loose = recommend(pois, prefs, origin=(22.518, 113.936), window_minutes=360).plans[0]
+    capped_prefs = [
+        Preference(p.member_id, quiet=p.quiet, price=p.price, near=p.near, max_minutes=180)
+        for p in prefs
+    ]
+    capped = recommend(pois, capped_prefs, origin=(22.518, 113.936), window_minutes=360).plans[0]
+    assert capped.total_minutes <= loose.total_minutes
+
+
+def test_start_hour_follows_the_latest_person():
+    """有人说七点才下班，出发时间就得按七点算。"""
+    pois, prefs = _small_setup()
+    prefs[0].start_hour = 10
+    prefs[1].start_hour = 19
+    rec = recommend(pois, prefs, origin=(22.518, 113.936))
+    assert rec.start_minute == 19 * 60
+    assert rec.to_dict()["plans"][0]["start_minute"] == 19 * 60
+
+
+def test_start_hour_defaults_when_nobody_says_anything():
+    pois, prefs = _small_setup()
+    rec = recommend(pois, prefs, origin=(22.518, 113.936))
+    assert rec.start_minute == 14 * 60

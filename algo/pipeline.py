@@ -20,6 +20,9 @@ from .utility import score_poi
 RAINY = {"rain", "storm", "thunder", "雨", "暴雨", "台风"}
 HOT = {"hot", "高温"}
 
+# 没人说几点出发时，默认下午两点——这是「周末出去玩」最典型的时间
+DEFAULT_START_HOUR = 14
+
 
 @dataclass
 class Recommendation:
@@ -28,12 +31,15 @@ class Recommendation:
     plans: list[Plan]
     top_pois: list[Consensus]
     agreement: float  # 两种聚合规则的一致度 0~1
+    start_minute: int = DEFAULT_START_HOUR * 60  # 出发时刻（从 0 点算起的分钟数）
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
             "plans": [
                 {
+                    # 前端拿它把 offset_minutes 渲染成 14:02 / 15:34 这样的时刻
+                    "start_minute": self.start_minute,
                     "items": [
                         {
                             "id": p.id,
@@ -152,4 +158,13 @@ def recommend(
     if agreement < 0.6:
         notes.append("ℹ️ 两种聚合规则排序差异较大，说明这组偏好分歧明显，建议投票定案")
 
-    return Recommendation(plans=plans, top_pois=ranked, agreement=agreement, notes=notes)
+    # 出发时间取全组最晚的那个：有人说「我七点才下班」，总不能让其他人六点就走
+    start_hour = max((p.start_hour for p in prefs if p.start_hour), default=DEFAULT_START_HOUR)
+
+    return Recommendation(
+        plans=plans,
+        top_pois=ranked,
+        agreement=agreement,
+        start_minute=int(start_hour) * 60,
+        notes=notes,
+    )

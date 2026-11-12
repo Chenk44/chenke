@@ -100,7 +100,12 @@ PUT /api/members/1/preference
   "indoor_pref": 0,
   "with_kids": false,
   "has_car": false,
-  "free_text": "想安静点，下雨天别走太远，人均 100 以内",
+  "prefer_categories": ["火锅"],
+  "exclude_categories": ["桌游"],
+  "prefer_tags": ["拍照"],
+  "max_minutes": 240,
+  "start_hour": 19,
+  "free_text": "想吃火锅，不要玩桌游，晚上七点出发，最多三小时",
   "auto_parse": true
 }
 ```
@@ -115,10 +120,25 @@ PUT /api/members/1/preference
   "indoor_pref": 1,
   "with_kids": false,
   "has_car": false,
-  "free_text": "想安静点，下雨天别走太远，人均 100 以内",
-  "parsed_hints": ["优先室内（下雨/高温）", "想安静", "不想跑远", "人均不超过 100 元"]
+  "prefer_categories": ["火锅"],
+  "exclude_categories": ["桌游"],
+  "prefer_tags": ["拍照"],
+  "max_minutes": 180,
+  "start_hour": 19,
+  "free_text": "想吃火锅，不要玩桌游，晚上七点出发，最多三小时",
+  "parsed_hints": ["想要「火锅」", "不要「桌游」", "晚上出发（19:00）", "最多玩 3 小时"]
 }
 ```
+
+这五个字段是后加的，含义各不一样：
+
+| 字段 | 例子 | 进排序的方式 |
+| --- | --- | --- |
+| `prefer_categories` | `["火锅"]` | 命中加 0.07（`algo/utility.py: CATEGORY_BONUS`） |
+| `exclude_categories` | `["桌游"]` | 命中的地点 `× 0.2`（只排除这一类，不连累同商圈的密室） |
+| `prefer_tags` | `["拍照"]` | 命中加 0.04 |
+| `max_minutes` | `180` | 动线超出上限时按比例扣分，不硬截断 |
+| `start_hour` | `19` | 只挪时间线起点，不参与地点打分 |
 
 三条约定：
 
@@ -155,6 +175,7 @@ POST /api/groups/8BV6K7/recommend
         {"id": "cgv-coastcity", "name": "CGV影城(海岸城)", "area": "海岸城", "category": "影院",
          "avg_price": 60.0, "blurb": "IMAX 厅够大 座椅也舒服", "offset_minutes": 186.0}
       ],
+      "start_minute": 840,
       "consensus": 0.7131,
       "mean_score": 0.7725,
       "worst_score": 0.7052,
@@ -182,6 +203,7 @@ POST /api/groups/8BV6K7/recommend
 | `per_member` | 每个人对这套方案的满意度 | 有争议时拿去群里对质，比"我觉得挺好"有说服力 |
 | `total_minutes` | 含路程的总耗时 | 超过 `window_minutes` 会扣分，不是硬砍 |
 | `offset_minutes` | 从出发算起第几分钟到这个点 | 前端据此渲染 `14:02 · 16:04` 的时间线 |
+| `start_minute` | 全组定下的出发时刻（分钟数，840 = 14:00） | 有人「七点才下班」时，时间线要整体后移，而不是写死 14:00 |
 | `top_pois` | 单个地点的排名（不是组合） | 用来回答"如果只去一个地方，去哪" |
 | `agreement` | Borda 与共识分两种排序的一致度 | 两种规则结论一致才敢说"这个结果稳" |
 | `notes` | 这次计算做了什么修正 | 天气降权这类隐性操作必须告诉用户 |

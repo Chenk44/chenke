@@ -70,6 +70,11 @@ def member_to_preference(member: Member, group: Group) -> Preference:
         indoor_pref=p.indoor_pref,
         with_kids=p.with_kids,
         has_car=p.has_car,
+        prefer_categories=tuple(p.prefer_categories or ()),
+        exclude_categories=tuple(p.exclude_categories or ()),
+        prefer_tags=tuple(p.prefer_tags or ()),
+        max_minutes=p.max_minutes,
+        start_hour=p.start_hour,
         free_text=p.free_text,
     )
 

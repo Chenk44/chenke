@@ -52,6 +52,12 @@ def init_db() -> None:
 # 所以这里做一次最小的「补列」迁移：缺什么补什么，幂等。
 _ADDED_COLUMNS: tuple[tuple[str, str, str], ...] = (
     ("preferences", "indoor_pref", "INTEGER DEFAULT 0"),
+    # 一句话解析出来的软约束，老库没有就补上（JSON 在 SQLite 里就是 TEXT）
+    ("preferences", "prefer_categories", "JSON"),
+    ("preferences", "exclude_categories", "JSON"),
+    ("preferences", "prefer_tags", "JSON"),
+    ("preferences", "max_minutes", "INTEGER"),
+    ("preferences", "start_hour", "INTEGER"),
 )
 
 

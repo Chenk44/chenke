@@ -67,6 +67,4 @@ for row in merged:
         outdoor[row["area"]] = outdoor.get(row["area"], 0) + 1
 for area in sorted(by_area):
     print(f"  {area:<8} 共 {by_area[area]:>2}  室外 {outdoor.get(area, 0):>2}")
-print(
-    f"\n合计 室外 {sum(outdoor.values())} / 室内 {len(merged) - sum(outdoor.values())}"
-)
+print(f"\n合计 室外 {sum(outdoor.values())} / 室内 {len(merged) - sum(outdoor.values())}")

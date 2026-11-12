@@ -38,6 +38,7 @@ def plan_to_out(record: PlanRecord, group: Group) -> PlanOut:
     p = _nickify(record.payload, group)
     return PlanOut(
         id=record.id,
+        start_minute=p.get("start_minute", 840),
         items=[PlanItemOut(**item) for item in p["items"]],
         consensus=p["consensus"],
         mean_score=p["mean_score"],

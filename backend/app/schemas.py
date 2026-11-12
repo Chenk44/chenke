@@ -72,9 +72,18 @@ class PreferenceIn(BaseModel):
     near: float = Field(default=0.5, ge=0, le=1, description="0 想近 ~ 1 愿意跑远")
     max_price: float | None = Field(default=None, ge=0, le=5000)
     exclude_tags: list[str] = Field(default_factory=list, description="忌口，例如 ['辣']")
-    indoor_pref: int = Field(default=0, ge=-1, le=1, description="-1 想出去 / 0 无所谓 / +1 想待室内")
+    indoor_pref: int = Field(
+        default=0, ge=-1, le=1, description="-1 想出去 / 0 无所谓 / +1 想待室内"
+    )
     with_kids: bool = False
     has_car: bool = False
+    prefer_categories: list[str] = Field(
+        default_factory=list, description="想去的品类，例如 ['餐饮']"
+    )
+    exclude_categories: list[str] = Field(default_factory=list, description="不想去的品类")
+    prefer_tags: list[str] = Field(default_factory=list, description="想要的体验标签")
+    max_minutes: int | None = Field(default=None, ge=60, le=720, description="最多玩多久")
+    start_hour: int | None = Field(default=None, ge=6, le=23, description="打算几点出发")
     free_text: str = Field(default="", max_length=200, description="一句话，例如「下雨天别走太远」")
     auto_parse: bool = Field(default=True, description="是否用规则把一句话解析成约束")
 
@@ -90,6 +99,11 @@ class PreferenceOut(BaseModel):
     indoor_pref: int
     with_kids: bool
     has_car: bool
+    prefer_categories: list[str] = []
+    exclude_categories: list[str] = []
+    prefer_tags: list[str] = []
+    max_minutes: int | None = None
+    start_hour: int | None = None
     free_text: str
     parsed_hints: list[str] = Field(default_factory=list, description="从一句话里解读到的约束")
 
@@ -110,6 +124,7 @@ class PlanItemOut(BaseModel):
 
 class PlanOut(BaseModel):
     id: int = Field(description="投票时要用这个 id")
+    start_minute: int = Field(default=840, description="出发时刻，从 0 点算起")
     items: list[PlanItemOut]
     consensus: float
     mean_score: float

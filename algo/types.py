@@ -65,6 +65,13 @@ class Preference:
     indoor_pref: int = 0
     with_kids: bool = False
     has_car: bool = False
+    # 下面五个来自一句话解析，都是「有就影响、没有就不管」的软约束：
+    # 说「想吃火锅」时给火锅加分，而不是把其余 200 个地点全部判死刑。
+    prefer_categories: tuple[str, ...] = ()  # 「想吃火锅」「想看展」
+    exclude_categories: tuple[str, ...] = ()  # 「不要玩桌游」「别去密室」
+    prefer_tags: tuple[str, ...] = ()  # 「想拍照」「想坐着」
+    max_minutes: int | None = None  # 最多玩多久（分钟），例如「最多两小时」
+    start_hour: int | None = None  # 打算几点出发（24 小时制）
     free_text: str = ""  # 用户原话，保留用于展示和 LLM 解析
 
     def hard_tags(self) -> frozenset[str]:

@@ -38,6 +38,9 @@ ROUTE_PENALTY_PER_HOUR = 0.10
 # 时间窗太空也扣分：用户说「玩 6 小时」，你只给 3 小时的安排，是没接住需求
 UNDERFILL_PENALTY = 0.15
 
+# 有人设了「最多玩 N 小时」时，每超 1 小时扣多少
+CAP_OVERRUN_PER_HOUR = 0.20
+
 MAX_ITEMS = 3
 MIN_ITEMS = 2
 
@@ -111,6 +114,11 @@ def build_plans(
 
     has_car = any(p.has_car for p in prefs)
 
+    # 有人说「最多玩两个小时」：取全组最严的那条。
+    # 这里用扣分而不是硬过滤——毕竟是他一个人的上限，不该让整组直接没方案；
+    # 但超得越多扣得越狠，排序上自然会往短方案靠。
+    minute_cap = min((p.max_minutes for p in prefs if p.max_minutes), default=None)
+
     # 1) 剪枝：只保留共识分最高的 pool_size 个地点作为候选
     ranked_ids = sorted(consensus, key=lambda pid: consensus[pid].consensus, reverse=True)
     pool_ids = ranked_ids[:pool_size]
@@ -176,11 +184,16 @@ def build_plans(
                 dwell_penalty = 0.0 if total <= window_minutes else (total - window_minutes) / 120.0
                 # 时间窗太空也扣分：说好玩 6 小时，只安排 3 小时等于没接住需求
                 shortfall = max(0.0, window_minutes - total) / max(window_minutes, 1.0)
+                # 有人设了硬性时长上限：每超 1 小时扣 0.2
+                over_cap = 0.0
+                if minute_cap is not None and total > minute_cap:
+                    over_cap = CAP_OVERRUN_PER_HOUR * (total - minute_cap) / 60.0
                 score = (
                     base
                     - ROUTE_PENALTY_PER_HOUR * (route / 60.0)
                     - dwell_penalty
                     - UNDERFILL_PENALTY * shortfall
+                    - over_cap
                 )
                 if best_for_combo is None or score > best_for_combo[0]:
                     best_for_combo = (score, seq, total, offsets)
