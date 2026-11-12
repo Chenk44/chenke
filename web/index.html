@@ -460,7 +460,9 @@ function renderPref() {
     input.oninput = () => { document.getElementById(k + "-val").textContent = input.value; };
   });
 
-  document.getElementById("btn-pref-home").onclick = goHome;
+  // 取不到就跳过：一个按钮的 id 写错，不该连累整页的事件绑定
+  const prefHome = document.getElementById("btn-pref-home");
+  if (prefHome) prefHome.onclick = goHome;
 
   document.getElementById("chips").addEventListener("click", (e) => {
     const chip = e.target.closest(".chip");
@@ -637,7 +639,8 @@ async function renderGroupView() {
       .catch(() => {});
   }
 
-  document.getElementById("btn-home").onclick = goHome;
+  const homeBtn = document.getElementById("btn-home");
+  if (homeBtn) homeBtn.onclick = goHome;
 
   document.getElementById("btn-invite").onclick = async () => {
     const url = location.origin + location.pathname + "#g/" + group.code;
