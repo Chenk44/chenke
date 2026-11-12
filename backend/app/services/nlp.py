@@ -37,6 +37,85 @@ _FAR = re.compile(r"远一点|跑远|海边|爬山|大鹏|愿意跑")
 _KIDS = re.compile(r"带娃|孩子|小孩|小朋友|宝宝")
 _CAR = re.compile(r"开车|自驾|有车")
 
+# ---------------------------------------------------------------------------
+# 否定与分句
+#
+# 之前的写法是「见词就置 True」，于是「不想去室内」和「要去室内」得到同一个结果。
+# 这里改成：先按标点断句，每句里再看目标词前面有没有否定词。
+# 条件句（「如果下雨就算了」）单独标出来——它描述的是触发条件，不是当下的约束，
+# 直接当硬约束会把「不想去室内，但如果下雨就算了」读成「想去室内」。
+# ---------------------------------------------------------------------------
+_CLAUSE_SPLIT = re.compile(r"[，,。；;！!？?\n]+")
+_CONDITIONAL = re.compile(r"如果|要是|万一|假如|的话|那就算|再说")
+_NEG = re.compile(r"不想|不要|不去|不喜欢|不乐意|受不了|没兴趣|讨厌|拒绝|别|不|算了")
+# 中文习惯把否定放在后面：「室内待腻了」「这地方去够了」。只看前面会漏。
+_NEG_TAIL = re.compile(r"腻|受够|待够|玩够|去够|烦|厌倦|够了|受不了")
+_INTENT = re.compile(r"想|要|去|吃|逛|看|玩|安排|来点")
+
+# 室内 / 室外 信号词。只放「说的是空间」的词，不放品类词——
+# 否则「不要玩桌游」会因为「桌游」被算作室内信号，把整句读成「想去室外」。
+_INDOOR_WORDS = ("室内", "商场", "购物中心", "空调", "室内场")
+_OUTDOOR_WORDS = ("室外", "户外", "外面", "露天", "露天场")
+
+# 品类词：被否定就进「排除」，跟着「想/去/吃/逛」就进「偏好」。
+_CATEGORY_WORDS: dict[str, tuple[str, ...]] = {
+    "桌游": ("桌游", "狼人杀"),
+    "密室": ("密室", "剧本杀"),
+    "KTV": ("ktv", "唱歌"),
+    "影院": ("电影", "影院", "影城"),
+    "展览": ("展览", "美术馆", "博物馆", "看展"),
+    "公园": ("公园", "爬山", "徒步", "绿道", "露营"),
+    "商场": ("商场", "购物中心"),
+    "咖啡": ("咖啡",),
+    "火锅": ("火锅",),
+    "海鲜": ("海鲜",),
+}
+
+# 体验类软约束：这些对应数据集里的 tags，不需要新字段。
+_QUEUE_AVOID = re.compile(r"不想排队|别排队|不要排队|怕排队|别等位|排太久")
+_PHOTO = re.compile(r"拍照|出片|打卡")
+_SIT = re.compile(r"坐着|有座位|能坐|坐下来")
+_CROWD_AVOID = re.compile(r"人少|别太挤|不要太挤|不挤|人别太多")
+
+# 时长与开始时间
+_DURATION_RE = re.compile(r"([一两二三四五六七八九十\d])\s*个?半?\s*小时")
+_CN_NUM = {"一": 1, "两": 2, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6,
+           "七": 7, "八": 8, "九": 9, "十": 10}
+_HALF_DAY = re.compile(r"半天")
+_WHOLE_DAY = re.compile(r"一整天|全天|一整天")
+_NOT_LONG = re.compile(r"别太久|不要太久|别玩太久|不用太久|时间不多")
+_START_WORDS: tuple[tuple[str, int], ...] = (
+    ("上午", 10), ("中午", 12), ("下午", 14), ("傍晚", 17), ("晚上", 19), ("夜里", 21),
+)
+
+
+def _split_clauses(text: str) -> list[tuple[str, bool]]:
+    """按标点断句，返回 (子句, 是否条件句)。"""
+    out: list[tuple[str, bool]] = []
+    for raw in _CLAUSE_SPLIT.split(text):
+        clause = raw.strip()
+        if not clause:
+            continue
+        out.append((clause, bool(_CONDITIONAL.search(clause))))
+    return out
+
+
+def _polarity(clause: str, words: tuple[str, ...]) -> tuple[int, str]:
+    """在一句里找这些词，返回 (+1 正向 / -1 被否定 / 0 没提到, 命中的词)。"""
+    low = clause.casefold()
+    for word in words:
+        idx = low.find(word.casefold())
+        if idx < 0:
+            continue
+        head = low[max(0, idx - 6) : idx]
+        if _NEG.search(head):
+            return -1, word
+        tail = low[idx + len(word) : idx + len(word) + 6]
+        if _NEG_TAIL.search(tail):
+            return -1, word
+        return 1, word
+    return 0, ""
+
 
 @dataclass
 class ParsedHints:
@@ -52,6 +131,18 @@ class ParsedHints:
     exclude_tags: list[str] = field(default_factory=list)
     hints: list[str] = field(default_factory=list)
 
+    # 新：室内倾向是三态。-1 想去外面 / +1 想进室内 / None 没提。
+    # 之前只有一个布尔 require_indoor，False 在算法里等于「没说话」，
+    # 所以用户说「不想去室内」时系统完全无动于衷。
+    indoor_pref: int | None = None
+    prefer_categories: list[str] = field(default_factory=list)
+    exclude_categories: list[str] = field(default_factory=list)
+    prefer_tags: list[str] = field(default_factory=list)
+    max_minutes: int | None = None
+    start_hour: int | None = None
+    # 每个约束被哪段原文触发，前端标签可以 hover 显示「依据」
+    evidence: dict[str, str] = field(default_factory=dict)
+
     def is_empty(self) -> bool:
         return (
             self.require_indoor is None
@@ -61,7 +152,13 @@ class ParsedHints:
             and self.with_kids is None
             and self.has_car is None
             and self.max_price is None
+            and self.indoor_pref is None
+            and self.max_minutes is None
+            and self.start_hour is None
             and not self.exclude_tags
+            and not self.prefer_categories
+            and not self.exclude_categories
+            and not self.prefer_tags
         )
 
 
@@ -72,8 +169,11 @@ def parse_constraints(text: str) -> ParsedHints:
         return out
 
     t = text.strip()
+    clauses = _split_clauses(t)
+    # 条件句（「如果下雨就算了」）不参与硬约束判定，否则会把意思读反。
+    focus = "，".join(clause for clause, conditional in clauses if not conditional) or t
 
-    if _INDOOR.search(t):
+    if _INDOOR.search(focus):
         out.require_indoor = True
         out.hints.append("优先室内（下雨/高温）")
 
@@ -118,6 +218,79 @@ def parse_constraints(text: str) -> ParsedHints:
         if 10 <= value <= 3000:
             out.max_price = value
             out.hints.append(f"人均不超过 {value:.0f} 元")
+
+    # --- 分句 + 否定感知的解析（「不想去室内」要读成想去外面）-------------
+    for clause, conditional in clauses:
+        # 室内 / 室外倾向：三态，-1 想出去，+1 想进来
+        indoor_pol, _ = _polarity(clause, _INDOOR_WORDS)
+        outdoor_pol, _ = _polarity(clause, _OUTDOOR_WORDS)
+        want_in = indoor_pol > 0 or outdoor_pol < 0
+        want_out = indoor_pol < 0 or outdoor_pol > 0
+
+        if conditional:
+            # 「如果下雨就算了」是触发条件，不是当下的要求——记一句就跳过
+            if want_in:
+                out.hints.append(f"条件：{clause}")
+            continue
+
+        if want_in and not want_out:
+            out.indoor_pref = 1
+            out.evidence.setdefault("indoor_pref", clause)
+            out.hints.append("想进室内")
+        elif want_out and not want_in:
+            out.indoor_pref = -1
+            out.evidence.setdefault("indoor_pref", clause)
+            out.hints.append("想去室外")
+
+        # 品类：被否定的进排除，跟着「想/去/吃/逛」的进偏好
+        for cat, words in _CATEGORY_WORDS.items():
+            pol, _ = _polarity(clause, words)
+            if pol < 0:
+                if cat not in out.exclude_categories:
+                    out.exclude_categories.append(cat)
+                    out.evidence.setdefault(f"exclude:{cat}", clause)
+                    out.hints.append(f"不去「{cat}」")
+            elif pol > 0 and _INTENT.search(clause) and cat not in out.prefer_categories:
+                out.prefer_categories.append(cat)
+                out.evidence.setdefault(f"prefer:{cat}", clause)
+                out.hints.append(f"想去「{cat}」")
+
+        # 体验类软约束，映射到数据集里已有的 tags
+        if _QUEUE_AVOID.search(clause) and "排队" not in out.exclude_tags:
+            out.exclude_tags.append("排队")
+            out.evidence.setdefault("no_queue", clause)
+            out.hints.append("不想排队")
+        if _CROWD_AVOID.search(clause) and out.quiet is None:
+            out.quiet = 0.85
+            out.hints.append("人少一点")
+        if _PHOTO.search(clause) and "拍照" not in out.prefer_tags:
+            out.prefer_tags.append("拍照")
+            out.hints.append("想拍照")
+        if _SIT.search(clause) and "座位" not in out.prefer_tags:
+            out.prefer_tags.append("座位")
+            out.hints.append("要能坐着")
+
+        # 时长与开始时间
+        if _NOT_LONG.search(clause) and out.max_minutes is None:
+            out.max_minutes = 180
+            out.hints.append("时间别太长")
+        if _HALF_DAY.search(clause) and out.max_minutes is None:
+            out.max_minutes = 240
+        if _WHOLE_DAY.search(clause) and out.max_minutes is None:
+            out.max_minutes = 480
+        m_dur = _DURATION_RE.search(clause)
+        if m_dur:
+            token = m_dur.group(1)
+            hours = _CN_NUM.get(token) or (int(token) if token.isdigit() else 0)
+            if 1 <= hours <= 12:
+                out.max_minutes = hours * 60
+                out.hints.append(f"最多玩 {hours} 小时")
+        if out.start_hour is None:
+            for word, hour in _START_WORDS:
+                if word in clause:
+                    out.start_hour = hour
+                    out.hints.append(f"{word}出发（{hour}:00）")
+                    break
 
     return out
 
@@ -165,5 +338,30 @@ def merge_hints(base: dict, hints: ParsedHints) -> MergeResult:
                 existing.append(tag)
                 result.applied.append("exclude_tags")
         merged["exclude_tags"] = existing
+
+    # 新增字段只在 base 里已经有这个键时才写。
+    # 这样解析器可以先于数据库演进：PreferenceRecord 还没加列时，
+    # 这些约束仍会显示在 hints 里，只是不落库，不会抛 AttributeError。
+    for key, value in (
+        ("indoor_pref", hints.indoor_pref),
+        ("max_minutes", hints.max_minutes),
+        ("start_hour", hints.start_hour),
+    ):
+        if key in merged:
+            _set(key, value, sensitive=False)
+
+    for key, values in (
+        ("prefer_categories", hints.prefer_categories),
+        ("exclude_categories", hints.exclude_categories),
+        ("prefer_tags", hints.prefer_tags),
+    ):
+        if key not in merged or not values:
+            continue
+        existing = list(merged.get(key) or [])
+        for value in values:
+            if value not in existing:
+                existing.append(value)
+                result.applied.append(key)
+        merged[key] = existing
 
     return result

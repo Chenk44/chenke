@@ -70,3 +70,79 @@ def test_merge_never_duplicates_tags():
     base = {"quiet": 0.5, "price": 0.5, "near": 0.5, "exclude_tags": ["辣"]}
     result = merge_hints(base, parse_constraints("不吃辣"))
     assert result.values["exclude_tags"] == ["辣"]
+
+
+# ---------------------------------------------------------------------------
+# 否定：用户说「不想去室内」，系统必须理解为「想去外面」
+#
+# 这一组测试是补一个真实 bug 的漏洞：以前 nlp.py 见词就置 True，
+# 「不想去室内」被读成 require_indoor=True，而 require_indoor=False 在算法里
+# 又等于什么都没说，于是用户越说「不想」，推荐越全是室内。
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize(
+    "text",
+    [
+        "不想去室内",
+        "别去室内，想走走",
+        "今天不想在室内待着",
+        "室内待腻了，想出去",
+    ],
+)
+def test_negative_indoor_means_go_outside(text):
+    assert parse_constraints(text).indoor_pref == -1
+
+
+def test_positive_indoor():
+    assert parse_constraints("太热了，要室内").indoor_pref == 1
+    assert parse_constraints("可以去商场").indoor_pref == 1
+
+
+def test_negative_outdoor_flips_to_indoor():
+    assert parse_constraints("不想去户外").indoor_pref == 1
+
+
+def test_conditional_clause_does_not_invert_meaning():
+    """「不想去室内，但如果下雨就算了」—— 条件句不该把意思读反。"""
+    parsed = parse_constraints("不想去室内，但如果下雨就算了")
+    assert parsed.indoor_pref == -1
+    assert parsed.require_indoor is None, "条件句里的「下雨」不该变成硬约束"
+
+
+def test_negated_category_is_excluded_not_indoor():
+    """「不要玩桌游」= 排除桌游，不等于「想去室外」。"""
+    parsed = parse_constraints("不要玩桌游，别去密室")
+    assert set(parsed.exclude_categories) == {"桌游", "密室"}
+    assert parsed.indoor_pref is None
+
+
+def test_mixed_sentence_keeps_both_meanings():
+    parsed = parse_constraints("可以去商场，不要玩桌游")
+    assert parsed.indoor_pref == 1
+    assert parsed.exclude_categories == ["桌游"]
+    assert "商场" in parsed.prefer_categories
+
+
+def test_duration_and_start_hour():
+    assert parse_constraints("两三个小时就行").max_minutes == 180
+    assert parse_constraints("别玩太久").max_minutes == 180
+    assert parse_constraints("晚上出发").start_hour == 19
+    assert parse_constraints("下午去").start_hour == 14
+
+
+def test_soft_experience_constraints():
+    assert "排队" in parse_constraints("不想排队").exclude_tags
+    assert "拍照" in parse_constraints("想找个能拍照的").prefer_tags
+    assert "座位" in parse_constraints("要能坐着聊天").prefer_tags
+
+
+def test_new_fields_only_merge_when_schema_has_them():
+    """数据库还没加 indoor_pref 列时，解析结果只出现在 hints 里，不能炸。"""
+    base = {"quiet": 0.5, "price": 0.5, "near": 0.5, "exclude_tags": []}
+    result = merge_hints(base, parse_constraints("不想去室内"))
+    assert "indoor_pref" not in result.values
+    assert any("室外" in h for h in result.hints)
+
+    base2 = {**base, "indoor_pref": None}
+    result2 = merge_hints(base2, parse_constraints("不想去室内"))
+    assert result2.values["indoor_pref"] == -1
+    assert "indoor_pref" in result2.applied
