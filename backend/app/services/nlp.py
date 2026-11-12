@@ -175,6 +175,8 @@ def parse_constraints(text: str) -> ParsedHints:
 
     if _INDOOR.search(focus):
         out.require_indoor = True
+        if out.indoor_pref is None:
+            out.indoor_pref = 1
         out.hints.append("优先室内（下雨/高温）")
 
     if _QUIET.search(t) and not _LOUD.search(t):
@@ -201,6 +203,8 @@ def parse_constraints(text: str) -> ParsedHints:
     if _KIDS.search(t):
         out.with_kids = True
         out.require_indoor = True
+        if out.indoor_pref is None:
+            out.indoor_pref = 1
         out.hints.append("带孩子，优先室内")
 
     if _CAR.search(t):
@@ -321,7 +325,9 @@ def merge_hints(base: dict, hints: ParsedHints) -> MergeResult:
         merged[key] = value
         result.applied.append(key)
 
-    _set("require_indoor", hints.require_indoor, sensitive=False)
+    # 旧的布尔字段折成三态：明确说了室内就 +1；说了室外由下面的 indoor_pref 覆盖
+    if hints.indoor_pref is None and hints.require_indoor:
+        _set("indoor_pref", 1, sensitive=False)
     _set("with_kids", hints.with_kids, sensitive=False)
     _set("has_car", hints.has_car, sensitive=False)
     _set("quiet", hints.quiet)

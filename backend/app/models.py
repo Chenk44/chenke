@@ -86,7 +86,8 @@ class PreferenceRecord(Base):
     near: Mapped[float] = mapped_column(Float, default=0.5)
     max_price: Mapped[float | None] = mapped_column(Float, nullable=True)
     exclude_tags: Mapped[list] = mapped_column(JSON, default=list)  # ["辣", "海鲜"]
-    require_indoor: Mapped[bool] = mapped_column(Boolean, default=False)
+    # -1 想出去 / 0 无所谓 / +1 想待室内，三态语义见 algo/types.py 的 Preference
+    indoor_pref: Mapped[int] = mapped_column(Integer, default=0)
     with_kids: Mapped[bool] = mapped_column(Boolean, default=False)
     has_car: Mapped[bool] = mapped_column(Boolean, default=False)
     free_text: Mapped[str] = mapped_column(Text, default="")

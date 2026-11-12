@@ -114,10 +114,16 @@ def score_poi(
         score *= HARD_PENALTY
         penalty_reasons.append("超预算")
 
-    # 硬约束：必须室内（下雨 / 带婴儿）
-    if pref.require_indoor and not poi.indoor:
+    # 硬约束：室内外偏好，两个方向都要罚。
+    # 说「想待室内」（下雨、太晒、带婴儿）时罚室外，
+    # 说「不想去室内」（待腻了、想出去走走）时同样罚室内——
+    # 之前只有前一半，所以「所有人都说不想去室内」照样推室内。
+    if pref.indoor_pref > 0 and not poi.indoor:
         score *= HARD_PENALTY
         penalty_reasons.append("在室外")
+    elif pref.indoor_pref < 0 and poi.indoor:
+        score *= HARD_PENALTY
+        penalty_reasons.append("在室内")
 
     if penalty_reasons:
         parts["硬约束"] = -0.15 * len(penalty_reasons)

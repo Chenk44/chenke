@@ -82,7 +82,7 @@ def _explain(
 
     # 挑一个最有说服力的共同约束
     indoor_all = all(p.indoor for p in seq)
-    if indoor_all and any(p.require_indoor for p in prefs):
+    if indoor_all and any(p.indoor_pref > 0 for p in prefs):
         bits.append("全程室内，下雨也不怕")
     if all(p.kid_friendly for p in seq) and any(p.with_kids for p in prefs):
         bits.append("每个点都能带娃")
@@ -103,6 +103,7 @@ def build_plans(
     window_minutes: float = 360.0,
     top_k: int = 3,
     pool_size: int = 24,
+    require_food: bool = True,
 ) -> list[Plan]:
     """返回按综合分排序的 top_k 个方案。"""
     if not pois or not prefs:
@@ -114,6 +115,17 @@ def build_plans(
     ranked_ids = sorted(consensus, key=lambda pid: consensus[pid].consensus, reverse=True)
     pool_ids = ranked_ids[:pool_size]
     by_id = {p.id: p for p in pois}
+
+    # 全员喊着要出去时，咖啡/餐饮这类室内点会被压出前 24 名；
+    # 而「一顿饭是刚需」的规则又会把所有组合否掉 —— 所以池子里必须留几个吃的。
+    if require_food:
+        food_ids = [
+            pid for pid in ranked_ids if pid in by_id and by_id[pid].category in FOOD_CATEGORIES
+        ][:4]
+        for pid in food_ids:
+            if pid not in pool_ids:
+                pool_ids.append(pid)
+
     pool = [by_id[pid] for pid in pool_ids if pid in by_id]
 
     if len(pool) < MIN_ITEMS:
@@ -140,7 +152,7 @@ def build_plans(
             if len(set(cats)) != len(cats):
                 continue
             # 吃饭是刚需
-            if not (set(cats) & FOOD_CATEGORIES):
+            if require_food and not (set(cats) & FOOD_CATEGORIES):
                 continue
 
             base = sum(consensus[p.id].consensus for p in combo) / len(combo)
@@ -180,6 +192,20 @@ def build_plans(
             candidates.append((score, seq, total, per_member, offsets))
 
     if not candidates:
+        # 池子里真的一个吃的都没有（数据太少）时，退一步：先给出能走的动线
+        if require_food:
+            return build_plans(
+                pois,
+                prefs,
+                matrix,
+                consensus,
+                origin,
+                group_size,
+                window_minutes,
+                top_k,
+                pool_size,
+                require_food=False,
+            )
         return []
 
     candidates.sort(key=lambda c: c[0], reverse=True)

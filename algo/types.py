@@ -57,7 +57,12 @@ class Preference:
     near: float = 0.5  # 0 越近越好 ~ 1 愿意跑远
     max_price: float | None = None  # 硬性预算上限（人均），None 表示不限
     exclude_tags: tuple[str, ...] = ()  # 忌口/排斥标签，例如 ("辣", "海鲜")
-    require_indoor: bool = False  # 例如带婴儿、下雨
+    # 室内外偏好，三态而不是布尔：
+    #   -1 想出去走走（「今天不想在室内待着」「出去透气」）
+    #    0 无所谓（没提）
+    #   +1 想待室内（「太晒了」「下雨」「带婴儿」）
+    # 布尔只能表达「必须室内」，说「不想去室内」时无操作，等于没听见。
+    indoor_pref: int = 0
     with_kids: bool = False
     has_car: bool = False
     free_text: str = ""  # 用户原话，保留用于展示和 LLM 解析

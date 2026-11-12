@@ -3,9 +3,9 @@
 <p>
   <a href="https://github.com/Chenk44/-/actions/workflows/ci.yml"><img src="https://github.com/Chenk44/-/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-3776ab" alt="python 3.10+">
-  <img src="https://img.shields.io/badge/tests-69%20passed-4dd4ac" alt="69 tests passed">
+  <img src="https://img.shields.io/badge/tests-85%20passed-4dd4ac" alt="85 tests passed">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license">
-  <img src="https://img.shields.io/badge/data-49%20POIs%20%C2%B7%2019%20areas-orange" alt="49 POIs">
+  <img src="https://img.shields.io/badge/data-201%20POIs%20%C2%B7%2020%20areas-orange" alt="201 POIs">
 </p>
 
 > 同是尘客，同走一程。
@@ -134,7 +134,7 @@ Windows 用户也可以直接双击/运行仓库根目录的 `run.ps1`，它会�
 python -m pytest -q
 ```
 
-69 个测试，覆盖效用函数、聚合规则、组合搜索、一句话解析和全部 API 端点。
+85 个测试，覆盖效用函数、聚合规则、组合搜索、一句话解析和全部 API 端点。
 每个测试都对应文档里的一句话，改坏了 CI 会红。
 
 ## 五、项目结构
@@ -144,42 +144,46 @@ python -m pytest -q
 
 ```
 .
-├── algo/                        801 行  纯 Python，不 import 任何 Web / ORM 库
-│   ├── types.py                  82     POI / Preference / Plan 三个数据结构
-│   ├── geo.py                    49     球面距离 + 通行时间估算（地铁/驾车两套参数）
-│   ├── utility.py               112     单人效用 U(地点, 偏好)：三根滑杆 → 一个分数
-│   ├── aggregate.py             114     共识分、Borda 计数、minimax regret、排序一致度
-│   ├── combine.py               184     组合与动线搜索、多样性去重、人话解释
-│   ├── pipeline.py              130     把上面几步编排成一次 run()
-│   └── loader.py                130     读 CSV 并逐列校验（脏数据启动即报错）
-├── backend/app/               1 100 行  Web 层，只做三件事：校验、读写库、转格式
-│   ├── main.py                   92     FastAPI 入口、CORS、静态挂载、422 文案、/api/netinfo
-│   ├── config.py                 25     pydantic-settings 读 .env
-│   ├── db.py                     30     引擎与建表
-│   ├── models.py                129     7 张表：局/成员/偏好/地点/方案/投票/评价
-│   ├── schemas.py               135     请求响应模型（OpenAPI 文档就是它生成的）
-│   ├── routers/groups.py        280     建局、加入、填偏好、一句话解析、示例局
-│   ├── routers/plans.py         119     生成方案、拉方案、投票、计票
-│   ├── routers/pois.py           67     地点列表、商圈列表、地点评价
-│   ├── services/nlp.py          136     一句话 → 滑杆修正（规则版，3 毫秒，可测）
-│   └── services/recommender.py   83     ORM ↔ algo 的唯一翻译层
-├── data/pois_shenzhen.csv       8 KB    49 个深圳地点 × 18 列（本项目最核心的资产）
-├── web/index.html               626 行  单页前端，零构建、零依赖、不需要 npm
-├── tests/                       510 行  68 个用例：算法 30、接口 21、解析 17
-│   ├── conftest.py               27     先设 DATABASE_URL 再 import app（顺序很关键）
-│   ├── test_algo.py             256     效用、聚合、组合、时间线、加载器校验
-│   ├── test_api.py              174     17 个接口（16 条路径）的端到端行为
-│   └── test_nlp.py               53     一句话解析的边界
-├── scripts/                     310 行
-│   ├── seed.py                   72     CSV → 数据库，可重复执行（--reset 清空重来）
-│   ├── demo.py                  147     命令行端到端演示：不开浏览器也能看到算法在干什么
-│   └── layout_probe.py           90     移动端布局体检（CDP 量宽度、找越界元素）
+├── algo/                      1 062 行  纯 Python，不 import 任何 Web / ORM 库
+│   ├── types.py                 106     POI / Preference / Plan 三个数据结构
+│   ├── geo.py                    62     球面距离 + 通行时间估算（地铁/驾车两套参数）
+│   ├── utility.py               155     单人效用 U(地点, 偏好)：三根滑杆 → 一个分数
+│   ├── aggregate.py             145     共识分、Borda 计数、minimax regret、排序一致度
+│   ├── combine.py               250     组合与动线搜索、多样性去重、人话解释
+│   ├── pipeline.py              155     把上面几步编排成一次 run()
+│   └── loader.py                161     读 CSV 并逐列校验（脏数据启动即报错）
+├── backend/app/               1 663 行  Web 层，只做三件事：校验、读写库、转格式
+│   ├── main.py                  116     FastAPI 入口、CORS、静态挂载、422 文案、/api/netinfo
+│   ├── config.py                 39     pydantic-settings 读 .env
+│   ├── db.py                    113     引擎、建表、老库补列与布尔列迁移
+│   ├── models.py                168     7 张表：局/成员/偏好/地点/方案/投票/评价
+│   ├── schemas.py               188     请求响应模型（OpenAPI 文档就是它生成的）
+│   ├── routers/groups.py        326     建局、加入、填偏好、一句话解析、示例局
+│   ├── routers/plans.py         148     生成方案、拉方案、投票、计票
+│   ├── routers/pois.py           83     地点列表、商圈列表、地点评价
+│   ├── services/nlp.py          373     一句话 → 结构化约束（规则版，3 毫秒，可测）
+│   └── services/recommender.py  104     ORM ↔ algo 的唯一翻译层
+├── data/pois_shenzhen.csv      34 KB     201 个深圳地点 × 18 列（本项目最核心的资产）
+├── web/index.html               738 行  单页前端，零构建、零依赖、不需要 npm
+├── tests/                       828 行  85 个用例：算法、聚合、组合、接口、解析
+│   ├── conftest.py               39     先设 DATABASE_URL 再 import app（顺序很关键）
+│   ├── test_algo.py             369     效用、聚合、组合、时间线、加载器校验
+│   ├── test_api.py              272     全部接口的端到端行为
+│   └── test_nlp.py              148     一句话解析的边界（含否定与条件句）
+├── scripts/                   1 230 行
+│   ├── seed.py                   92     CSV → 数据库，可重复执行（--reset 清空重来）
+│   ├── demo.py                  175     命令行端到端演示：不开浏览器也能看到算法在干什么
+│   ├── fetch_amap.py            256     高德 POI 拉取（缓存、重试、直连兜底）
+│   ├── shortlist.py             161     候选短名单：品牌去重 + 每商圈每品类限额
+│   ├── draft_labels.py          371     草稿标注：把高德拿不到的 9 个字段先猜一版
+│   ├── merge_pois.py             72     人工表 + 草稿表合并（同名同地点去重）
+│   └── layout_probe.py          102     移动端布局体检（CDP 量宽度、找越界元素）
 ├── docs/
-│   ├── ALGORITHM.md             229     算法说明书：从痛点推到公式
-│   ├── API.md                   220     17 个接口 + 真实响应样例
-│   ├── DATA.md                   82     数据来源、标注口径、合规说明
+│   ├── ALGORITHM.md             334     算法说明书：从痛点推到公式
+│   ├── API.md                   270     17 个接口 + 真实响应样例
+│   ├── DATA.md                  106     数据来源、标注口径、合规说明
 │   └── preview-*.png                    README 用的两张真实截图
-├── .github/workflows/ci.yml      35     push 即跑：ruff → 灌数据 → 69 测试 → 真起服务 curl
+├── .github/workflows/ci.yml      35     push 即跑：ruff → 灌数据 → 85 测试 → 真起服务 curl
 ├── run.ps1 / run.sh                     一键启动（Windows / macOS+Linux）
 ├── Dockerfile                    22     多阶段构建 + 非 root 用户
 └── requirements.txt / pyproject.toml    依赖 7 个；pytest 与 ruff 配置
@@ -202,7 +206,7 @@ web/index.html          点「生成方案」
 
 三个刻意的分层决定，答辩时可以直接讲：
 
-1. **`algo/` 不 import FastAPI，也不 import SQLAlchemy**。801 行算法被 47 个算法与解析测试直接覆盖，
+1. **`algo/` 不 import FastAPI，也不 import SQLAlchemy**。1 062 行算法被 47 个算法与解析测试直接覆盖，
    跑测试不需要起服务、不需要连着数据库、不需要网络。算法是这个项目的价值，它必须能单独被验证。
 2. **`services/recommender.py` 是唯一同时认识两边的文件**。它导出 `record_to_poi` /
    `member_to_preference` / `run_recommendation` 三个函数；`algo` 反向完全不认识数据库。
@@ -262,7 +266,7 @@ docker run -p 8000:8000 chenke
 ## 九、已知局限
 
 1. **只做了深圳。** 地点表是人工标注的，换个城市需要重新标 2 天。这是刻意的取舍：
-   十个城市各 20 条，不如一个城市 49 条标得准。
+   十个城市各 20 条，不如一个城市 201 条标得准。
 2. **通行时间是指数估算，不是实时路况。** 用球面距离 × 路网系数 + 地铁/驾车差异，
    误差在 20% 左右。接高德路径规划 API 只需替换 `algo/geo.py` 里一个函数，
    但免费配额会被枚举组合瞬间打爆，所以做了本地缓存策略（见 docs/ALGORITHM.md 第 6 节）。

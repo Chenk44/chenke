@@ -67,7 +67,7 @@ def member_to_preference(member: Member, group: Group) -> Preference:
         near=p.near,
         max_price=max_price,
         exclude_tags=tuple(p.exclude_tags or ()),
-        require_indoor=p.require_indoor,
+        indoor_pref=p.indoor_pref,
         with_kids=p.with_kids,
         has_car=p.has_car,
         free_text=p.free_text,

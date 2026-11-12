@@ -42,6 +42,7 @@ class Recommendation:
                             "category": p.category,
                             "avg_price": p.avg_price,
                             "blurb": p.blurb,
+                            "indoor": p.indoor,
                             "offset_minutes": round(
                                 plan.offsets[i] if i < len(plan.offsets) else 0.0, 1
                             ),
@@ -84,11 +85,14 @@ def apply_weather(prefs: list[Preference], weather: str | None) -> list[str]:
     w = weather.strip().lower()
     if w in RAINY:
         for p in prefs:
-            p.require_indoor = True
+            # 用户自己说了「想出去」就尊重他，天气只在没表态时补默认
+            if p.indoor_pref == 0:
+                p.indoor_pref = 1
         notes.append("💧 检测到降雨，已自动优先室内地点")
     elif w in HOT:
         for p in prefs:
-            p.require_indoor = True
+            if p.indoor_pref == 0:
+                p.indoor_pref = 1
         notes.append("🥵 高温天气，已优先有空调的室内地点")
     return notes
 

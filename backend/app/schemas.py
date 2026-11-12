@@ -72,7 +72,7 @@ class PreferenceIn(BaseModel):
     near: float = Field(default=0.5, ge=0, le=1, description="0 想近 ~ 1 愿意跑远")
     max_price: float | None = Field(default=None, ge=0, le=5000)
     exclude_tags: list[str] = Field(default_factory=list, description="忌口，例如 ['辣']")
-    require_indoor: bool = False
+    indoor_pref: int = Field(default=0, ge=-1, le=1, description="-1 想出去 / 0 无所谓 / +1 想待室内")
     with_kids: bool = False
     has_car: bool = False
     free_text: str = Field(default="", max_length=200, description="一句话，例如「下雨天别走太远」")
@@ -87,7 +87,7 @@ class PreferenceOut(BaseModel):
     near: float
     max_price: float | None
     exclude_tags: list[str]
-    require_indoor: bool
+    indoor_pref: int
     with_kids: bool
     has_car: bool
     free_text: str
@@ -104,6 +104,7 @@ class PlanItemOut(BaseModel):
     category: str
     avg_price: float
     blurb: str
+    indoor: bool = True
     offset_minutes: float = Field(default=0.0, description="从出发算起第几分钟到，用于渲染时间线")
 
 

@@ -129,10 +129,25 @@ def test_diet_exclusion_penalises_tagged_place():
 
 
 def test_indoor_requirement_outdoors_penalty():
-    pref = Preference("a", require_indoor=True)
+    pref = Preference("a", indoor_pref=1)
     inside = score_poi(make_poi(indoor=True), pref, 10).score
     outside = score_poi(make_poi(indoor=False), pref, 10).score
     assert outside < inside
+
+
+def test_wanting_to_go_outside_penalises_indoor_places():
+    """「今天不想在室内待着」——这句以前在算法里完全没声音。"""
+    pref = Preference("a", indoor_pref=-1)
+    inside = score_poi(make_poi(indoor=True), pref, 10).score
+    outside = score_poi(make_poi(indoor=False), pref, 10).score
+    assert inside < outside
+
+
+def test_no_indoor_preference_scores_both_the_same():
+    pref = Preference("a")
+    inside = score_poi(make_poi(indoor=True), pref, 10).score
+    outside = score_poi(make_poi(indoor=False), pref, 10).score
+    assert inside == pytest.approx(outside)
 
 
 def test_group_too_big_for_small_venue_is_penalised():
@@ -244,6 +259,17 @@ def test_build_plans_returns_diverse_routes():
         assert plan.total_minutes > 0
 
 
+def test_everyone_wants_outdoors_still_gets_plans_with_food():
+    """全员喊着要出去时，室内餐饮会被压出候选池，别让「必须有一顿饭」把方案全否掉。"""
+    pois = load_pois()
+    prefs = [Preference(f"p{i}", indoor_pref=-1) for i in range(5)]
+    rec = recommend(pois, prefs, origin=(22.518, 113.936), window_minutes=360)
+    assert len(rec.plans) >= 1
+    for plan in rec.plans:
+        assert {"餐饮", "咖啡"} & {p.category for p in plan.items}
+        assert all(not p.indoor for p in plan.items), "全员想出去，就该给室外的点"
+
+
 def test_recommendation_is_deterministic():
     """同样的输入必须给同样的输出，否则投票没法和别人对齐。"""
     pois, prefs = _small_setup()
@@ -306,14 +332,14 @@ def test_empty_inputs_raise():
 def test_rain_flips_everyone_to_indoor():
     prefs = [Preference("甲"), Preference("乙")]
     notes = apply_weather(prefs, "rain")
-    assert all(p.require_indoor for p in prefs)
+    assert all(p.indoor_pref == 1 for p in prefs)
     assert notes and "室内" in notes[0]
 
 
 def test_clear_weather_changes_nothing():
     prefs = [Preference("甲")]
     notes = apply_weather(prefs, "clear")
-    assert prefs[0].require_indoor is False
+    assert prefs[0].indoor_pref == 0
     assert notes == []
 
 

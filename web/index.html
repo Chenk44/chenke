@@ -421,7 +421,7 @@ function slider(id, label, leftEnd, rightEnd, value) {
 
 function renderPref() {
   const p = state.pref || { quiet: 0.5, price: 0.5, near: 0.5, exclude_tags: [],
-    require_indoor: false, with_kids: false, has_car: false, free_text: "", max_price: null };
+    indoor_pref: 0, with_kids: false, has_car: false, free_text: "", max_price: null };
 
   $app.innerHTML = `
     <div class="steps"><div class="on"></div><div class="on"></div><div></div></div>
@@ -440,7 +440,8 @@ function renderPref() {
 
       <div style="margin:14px 0 8px" class="muted">硬条件</div>
       <div class="chips" id="chips">
-        <div class="chip" data-k="require_indoor" aria-pressed="${!!p.require_indoor}">必须室内</div>
+        <div class="chip" data-indoor="1" aria-pressed="${p.indoor_pref === 1}">想待室内</div>
+        <div class="chip" data-indoor="-1" aria-pressed="${p.indoor_pref === -1}">想出去走走</div>
         <div class="chip" data-k="with_kids" aria-pressed="${!!p.with_kids}">带小孩</div>
         <div class="chip" data-k="has_car" aria-pressed="${!!p.has_car}">我开车</div>
         <div class="chip" data-tag="辣" aria-pressed="${(p.exclude_tags || []).includes("辣")}">不吃辣</div>
@@ -467,7 +468,15 @@ function renderPref() {
   document.getElementById("chips").addEventListener("click", (e) => {
     const chip = e.target.closest(".chip");
     if (!chip) return;
-    chip.setAttribute("aria-pressed", chip.getAttribute("aria-pressed") === "true" ? "false" : "true");
+    const on = chip.getAttribute("aria-pressed") !== "true";
+    // 「想待室内」和「想出去走走」互斥，点一个就把另一个按掉
+    if (chip.dataset.indoor) {
+      document.querySelectorAll(".chip[data-indoor]").forEach((c) => {
+        c.setAttribute("aria-pressed", c === chip && on ? "true" : "false");
+      });
+      return;
+    }
+    chip.setAttribute("aria-pressed", on ? "true" : "false");
   });
 
   // 打字时实时解析，让用户看到「我们读懂了什么」
@@ -495,7 +504,7 @@ function renderPref() {
       near: Number(document.getElementById("near").value) / 100,
       max_price: document.getElementById("max-price").value ? Number(document.getElementById("max-price").value) : null,
       exclude_tags: [],
-      require_indoor: false,
+      indoor_pref: 0,
       with_kids: false,
       has_car: false,
       free_text: document.getElementById("free-text").value.trim(),
@@ -504,7 +513,9 @@ function renderPref() {
     document.querySelectorAll(".chip").forEach((chip) => {
       if (chip.getAttribute("aria-pressed") !== "true") return;
       const tag = chip.dataset.tag;
+      const indoor = chip.dataset.indoor;
       if (tag) body.exclude_tags.push(tag);
+      else if (indoor) body.indoor_pref = Number(indoor);
       else body[chip.dataset.k] = true;
     });
 
@@ -554,7 +565,7 @@ async function renderGroupView() {
     const items = plan.items.map((it) => `
       <li><span class="dot"></span>
         <span class="what"><b>${fmtClock(it.offset_minutes)} · ${esc(it.name)}</b>
-          <div class="where">${esc(it.category)} · ${esc(it.area)} · ${esc(it.blurb)}</div></span>
+          <div class="where">${esc(it.category)} · ${esc(it.area)} · ${it.indoor ? "室内" : "室外"} · ${esc(it.blurb)}</div></span>
         <span class="price">¥${money(it.avg_price)}</span></li>`).join("");
     const members = Object.entries(plan.per_member).map(([name, score]) =>
       `<span class="m ${score < 0.45 ? "low" : ""}">${esc(name)} ${(score * 100).toFixed(0)}</span>`).join("");

@@ -95,7 +95,7 @@ def test_free_text_is_parsed_into_constraints(client):
     member = _join(client, group["code"], "下雨天の人")
     pref = _fill(client, member["id"], free_text="下雨天别走太远，人均 80 以内")
 
-    assert pref["require_indoor"] is True
+    assert pref["indoor_pref"] == 1
     assert pref["near"] == 0.2
     assert pref["max_price"] == 80
     assert pref["parsed_hints"], "应该告诉用户我们读懂了什么"
@@ -109,12 +109,31 @@ def test_manual_slider_wins_over_free_text(client):
     assert pref["quiet"] == 0.9
 
 
+def test_saying_no_to_indoor_actually_changes_the_plans(client):
+    """全员说「不想去室内」，方案里就不该再出现室内地点。
+
+    这是用户报的第二个 bug 的回归测试：以前这句话只被解析成
+    require_indoor=False，而 False 在算法里等于「没说话」。
+    """
+    group = _new_group(client)
+    members = [_join(client, group["code"], f"想出去{i}") for i in range(3)]
+    for m in members:
+        pref = _fill(client, m["id"], free_text="今天不想在室内待着，想出去走走")
+        assert pref["indoor_pref"] == -1, pref
+
+    plans = client.post(f"/api/groups/{group['code']}/recommend").json()["plans"]
+    items = [item for plan in plans for item in plan["items"]]
+    assert items, "应该给出方案"
+    indoor = [item["name"] for item in items if item["indoor"]]
+    assert not indoor, f"这些室内地点不该出现：{indoor}"
+
+
 def test_parse_endpoint(client):
     resp = client.post("/api/parse", json={"text": "带孩子，别吃辣，想安静点"})
     assert resp.status_code == 200
     data = resp.json()
     assert data["with_kids"] is True
-    assert data["require_indoor"] is True
+    assert data["indoor_pref"] == 1
     assert "辣" in data["exclude_tags"]
     assert data["quiet"] == 0.8
 
