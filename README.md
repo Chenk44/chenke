@@ -1,7 +1,7 @@
 # 尘客 · 一群人去哪玩
 
 <p>
-  <a href="https://github.com/Chenk44/-/actions/workflows/ci.yml"><img src="https://github.com/Chenk44/-/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/Chenk44/chenke/actions/workflows/ci.yml"><img src="https://github.com/Chenk44/chenke/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-3776ab" alt="python 3.10+">
   <img src="https://img.shields.io/badge/tests-85%20passed-4dd4ac" alt="85 tests passed">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license">
