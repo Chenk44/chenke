@@ -20,4 +20,4 @@ echo "  就绪：http://127.0.0.1:8000"
 echo "  接口文档：http://127.0.0.1:8000/docs"
 echo
 
-exec $PY -m uvicorn app.main:app --app-dir backend --reload
+exec $PY -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --reload
