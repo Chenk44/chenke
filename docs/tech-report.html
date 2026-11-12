@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>尘客 · 技术文档</title>
+<style>
+  @page { size: A4; margin: 17mm 15mm 16mm 15mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: #1b1f24;
+    font-family: "Noto Sans SC", "Source Han Sans SC", "Microsoft YaHei", "PingFang SC", sans-serif;
+    font-size: 10.3pt; line-height: 1.62;
+  }
+  h1, h2, h3, h4 { font-weight: 700; color: #10202b; line-height: 1.3; }
+  h2.sec {
+    font-size: 17pt; margin: 0 0 10px; padding: 8px 0 6px;
+    border-bottom: 2.5px solid #12b886;
+  }
+  h2.sec .num { color: #12b886; margin-right: 8px; }
+  h3 { font-size: 12.6pt; margin: 18px 0 6px; }
+  h4 { font-size: 10.8pt; margin: 13px 0 4px; color: #244; }
+  p { margin: 6px 0; text-align: justify; }
+  ul, ol { margin: 6px 0 6px 0; padding-left: 20px; }
+  li { margin: 3px 0; }
+  code, .mono {
+    font-family: "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
+    font-size: 9.1pt; background: #f2f5f7; padding: 1px 4px; border-radius: 3px;
+    color: #0d3b33; overflow-wrap: break-word;
+  }
+  pre {
+    background: #f6f8f9; border-left: 3px solid #12b886; padding: 8px 11px;
+    margin: 8px 0; overflow: visible; font-size: 8.9pt; line-height: 1.55;
+    font-family: "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
+    white-space: pre-wrap; word-break: break-word; break-inside: avoid;
+  }
+  pre code { background: none; padding: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 10px; font-size: 9.2pt; break-inside: auto; }
+  tr { break-inside: avoid; }
+  thead { display: table-header-group; }
+  h3, h4 { break-after: avoid; }
+  p { orphans: 2; widows: 2; }
+  th, td { border: 1px solid #d7dee3; padding: 5px 7px; text-align: left; vertical-align: top; }
+  th { background: #eef4f2; font-weight: 600; color: #0d3b33; }
+  tr:nth-child(even) td { background: #fafcfc; }
+  .kpi { display: flex; gap: 8px; margin: 10px 0 12px; }
+  .kpi div {
+    flex: 1; border: 1px solid #d7e3df; border-radius: 6px; padding: 8px 6px;
+    text-align: center; background: #f7fbfa;
+  }
+  .kpi b { display: block; font-size: 15pt; color: #0f8a68; line-height: 1.2; }
+  .kpi span { font-size: 8.6pt; color: #5a6b73; }
+  .box {
+    border: 1px solid #d7e3df; background: #f8fbfa; border-radius: 6px;
+    padding: 9px 12px; margin: 10px 0;
+  }
+  .box.warn { border-color: #f0d9a8; background: #fdf9ef; }
+  .box.dark { border-color: #10202b; background: #10202b; color: #e8f3f0; }
+  .box.dark code { background: #1d3440; color: #7ce0c0; }
+  .quote {
+    border-left: 3px solid #b6c4cc; padding: 2px 0 2px 10px; margin: 8px 0;
+    color: #44545c; font-size: 9.8pt;
+  }
+  .tag {
+    display: inline-block; font-size: 8.4pt; padding: 1px 6px; border-radius: 9px;
+    background: #e6f7f1; color: #0f8a68; border: 1px solid #bfe8db; margin-right: 4px;
+  }
+  .small { font-size: 8.8pt; color: #5a6b73; }
+  .page-break { break-before: page; }
+  .no-break { break-inside: avoid; }
+  /* 封面 */
+  .cover { height: 985px; display: flex; flex-direction: column; justify-content: space-between; }
+  .cover .top { border-top: 6px solid #10202b; padding-top: 14px; }
+  .cover .brand { font-size: 11pt; letter-spacing: 3px; color: #12b886; font-weight: 700; }
+  .cover h1 { font-size: 40pt; margin: 26px 0 4px; letter-spacing: 2px; }
+  .cover .sub { font-size: 15pt; color: #3c4d55; margin-bottom: 24px; }
+  .cover .tagline { font-size: 11.5pt; color: #0f8a68; }
+  .cover .meta { font-size: 9.6pt; color: #44545c; line-height: 1.9; }
+  .cover .bottom { border-top: 1px solid #c9d4da; padding-top: 10px; font-size: 8.8pt; color: #66757d; }
+  .toc li { margin: 5px 0; }
+  .toc .l1 { font-weight: 700; }
+  .toc .l2 { margin-left: 18px; font-size: 9.6pt; color: #3c4d55; }
+</style>
+</head>
+<body>
+
+<!-- ============ 封面 ============ -->
+<section class="cover">
+  <div class="top">
+    <div class="brand">尘客 · CHENKE</div>
+    <h1>技术文档</h1>
+    <div class="sub">给一群人推荐去哪玩 —— 意图控制、架构约束与可复现性</div>
+    <div class="tagline">众口不再难调 · 只做深圳 · 202 个地点 · 125 个测试</div>
+  </div>
+  <div class="meta">
+    <div><b>项目名称：</b>尘客（Chenke）</div>
+    <div><b>一句话：</b>把「我们这群人去哪」拆成 16 个结构化约束，算出一组可执行方案，并说明谁让了步。</div>
+    <div><b>仓库：</b>github.com/Chenk44/chenke　<b>版本：</b>v1.0.0（commit c7a14f5）</div>
+    <div><b>技术栈：</b>Python 3.12 / FastAPI 0.162 / SQLAlchemy 2.1 / 原生 HTML+JS（零构建）</div>
+    <div><b>文档日期：</b>2026-11-12　<b>页数：</b>不超过 30 页</div>
+  </div>
+  <div class="bottom">
+    本文档重点回答三个问题：<b>① AI 写代码时，我如何控制它想做的事（意图控制策略）；② 它写出来的代码被约束成什么架构；③ 别人拿到仓库能否跑出同样的结果（可复现性论证）。</b>
+  </div>
+</section>
+
+<!-- ============ 目录 ============ -->
+<section class="page-break">
+  <h2 class="sec"><span class="num">0</span>目录与阅读约定</h2>
+  <ul class="toc">
+    <li class="l1">1　项目与问题定位</li>
+    <li class="l2">1.1 它解决的到底是什么问题　1.2 规模与验收数字　1.3 本文档的证据来源</li>
+    <li class="l1">2　意图控制策略：怎么让 AI 做我要的东西</li>
+    <li class="l2">2.1 从一句话需求到可执行约束　2.2 上下文分五层　2.3 四类提示词骨架</li>
+    <li class="l2">2.4 四类典型失控与对策　2.5 人机分工的边界　2.6 诊断优先于修复</li>
+    <li class="l2">2.7 意图控制的账本</li>
+    <li class="l1">3　架构设计：AI 生成的代码被约束成了什么形状</li>
+    <li class="l2">3.1 四层与依赖方向　3.2 为什么算法层不认识框架　3.3 契约先行</li>
+    <li class="l2">3.4 状态演化与迁移　3.5 降级链　3.6 复杂度预算　3.7 前端策略　3.8 约束怎么被强制</li>
+    <li class="l1">4　可复现性论证</li>
+    <li class="l2">4.1 结论先行　4.2 洁净检出实验　4.3 确定性的来源与残余风险</li>
+    <li class="l2">4.4 外部依赖与断网策略　4.5 环境矩阵　4.6 数据与版本快照　4.7 复现失败时的定位手册</li>
+    <li class="l1">5　验收附录</li>
+    <li class="l2">5.1 测试分布　5.2 接口清单　5.3 数据字段与分布　5.4 已知局限（带数字）　5.5 三分钟复现清单</li>
+  </ul>
+
+  <h3>阅读约定</h3>
+  <ul>
+    <li><b>「我」</b>指项目作者（人类）；<b>「AI」</b>指编程助手。本文档描述的是两者之间的协作规程，不是工具测评。</li>
+    <li>文中所有数字都是<b>数出来或跑出来</b>的，不是估计：测试数来自 <code>pytest --collect-only</code>，行数来自逐文件 <code>splitlines()</code>，数据规模来自 <code>csv.DictReader</code>，提交数来自 <code>git rev-list --count</code>。</li>
+    <li>凡是我做错又改回来的地方，都保留在文中（第 2.4、3.4、4.7 节），因为它们比正确路径更能说明约束是怎么起作用的。</li>
+    <li>代码引用一律写成 <code>文件:行号</code> 或函数签名，可以直接在仓库里搜到。</li>
+  </ul>
+</section>
+
+<!-- ============ 1 ============ -->
+<section style="margin-top:26px">
+  <h2 class="sec"><span class="num">1</span>项目与问题定位</h2>
+
+  <h3>1.1 它解决的到底是什么问题</h3>
+  <p>真正的痛点不是「找不到好地方」，而是<b>一群人凑不出一个决定</b>。五个人的群聊里，每个人都能说出一个「不错的地方」，
+  但没人愿意替别人拍板；讨论四十分钟，最后往往去了楼下商场。推荐系统解决的是「一个人去哪」，
+  而这个问题里缺的东西恰恰是<b>公平</b>：不是平均分最高，而是别每次都让同一个人让步。</p>
+  <p>所以本项目的产品形态是三段：<b>建局</b>（拿到 6 位邀请码）→ <b>各填各的</b>（三个滑杆 + 硬条件 + 一句话）→
+  <b>输出三个方案 + 投票定案</b>。每个方案都同时给出「大家的共识度」和「谁让步最多」，
+  把群体决策里最容易被忽视的信息摆到台面上。</p>
+  <div class="box">
+    <b>范围是刻意收窄的：</b>只做深圳。一座城市的 202 个地点标得准，胜过十个城市各 20 条。
+    这个决定同时约束了数据、算法与文档——后面所有「为什么不做得更大」的问题，答案都回到这一句。
+  </div>
+
+  <h3>1.2 规模与验收数字</h3>
+  <div class="kpi">
+    <div><b>202</b><span>深圳地点</span></div>
+    <div><b>20</b><span>商圈</span></div>
+    <div><b>125</b><span>自动化测试</span></div>
+    <div><b>17</b><span>HTTP 接口</span></div>
+    <div><b>39</b><span>提交（3 天）</span></div>
+  </div>
+  <table>
+    <thead><tr><th style="width:24%">指标</th><th style="width:22%">数值</th><th>口径 / 出处</th></tr></thead>
+    <tr><td>地点数据</td><td>202 条 × 20 列</td><td><code>data/pois_shenzhen.csv</code>，<code>csv.DictReader</code> 计数</td></tr>
+    <tr><td>商圈</td><td>20 个，每商圈 8–13 条</td><td>同上，<code>Counter(area)</code></td></tr>
+    <tr><td>室内 / 室外</td><td>122 / 80</td><td>同上，按 <code>indoor</code> 列计</td></tr>
+    <tr><td>商圈通行表</td><td>190 对 × 2 = 380 行</td><td><code>data/area_travel.csv</code>，高德路径规划预计算</td></tr>
+    <tr><td>代码规模</td><td>algo 1 319 / backend 2 068 / tests 1 291 / scripts 1 704 / web 806 行</td><td>逐文件 <code>splitlines()</code>，含空行与 <code>__init__.py</code></td></tr>
+    <tr><td>测试</td><td>125 个（算法 40 / 接口 26 / 解析 29 / 营业时间 16 / 通行表 5 / 天气 9）</td><td><code>pytest --collect-only -q</code></td></tr>
+    <tr><td>提交</td><td>39 次，2026-11-10 10:01 → 11-12 19:20</td><td><code>git rev-list --count HEAD</code></td></tr>
+    <tr><td>单次推荐成本</td><td>1 005 次打分，约 3 毫秒</td><td><code>docs/ALGORITHM.md</code> §8 实测</td></tr>
+  </table>
+
+  <h3>1.3 本文档的证据来源</h3>
+  <p>三个问题分别对应三类证据，这也是本文档的组织方式：</p>
+  <ul>
+    <li><b>意图控制</b> → 证据是<b>过程记录</b>：需求原话、我给出的选项、最终选择、因此产生的提交。</li>
+    <li><b>架构约束</b> → 证据是<b>代码事实</b>：依赖方向（<code>algo/</code> 里 grep 不到任何框架名）、模块职责、迁移函数、降级分支。</li>
+    <li><b>可复现性</b> → 证据是<b>实验输出</b>：把一个干净目录从 <code>git archive</code> 还原后，跑出来的每一条 stdout（第 4.2 节逐条贴出）。</li>
+  </ul>
+</section>
+
+<!-- ============ 2 ============ -->
+<section style="margin-top:26px">
+  <h2 class="sec"><span class="num">2</span>意图控制策略：怎么让 AI 做我要的东西</h2>
+
+  <p>这一节回答的第一个问题是：<b>AI 写代码时，「意图」到底在哪一层被决定？</b>
+  结论是：<b>不在提示词里，而在约束里</b>。提示词只能表达一次请求，约束才能让第二十次修改仍然朝着同一个方向。
+  所以我做的事可以概括成一句话——<b>把意图从「话」变成「可以被检查的东西」</b>。</p>
+
+  <h3>2.1 从一句话需求到可执行约束</h3>
+  <p>项目起点是一句很虚的话：「和朋友出去玩经常不知道去哪，需要一个软件综合各平台推荐，给出我们心目中的目的地」。
+  这句话里有三个陷阱：<b>「综合各平台」</b>（爬公开 API 拿不到的内容）、<b>「我们」</b>（多人，但没说怎么聚合）、<b>「心目中的」</b>（主观，无法验收）。
+  如果直接把这句话交给 AI，它会热情地开始写爬虫。</p>
+  <p>所以我先做的是<b>三次收敛</b>，每次都把一句模糊的话换成一个可检查的约束：</p>
+  <table>
+    <thead><tr><th style="width:16%">收敛</th><th style="width:30%">原始说法</th><th style="width:30%">换成可检查的约束</th><th>理由</th></tr></thead>
+    <tr>
+      <td>数据源</td>
+      <td>「综合各平台推荐」</td>
+      <td>只用高德开放平台的 POI 结构化字段；9 个拿不到的字段自己人工标注</td>
+      <td>大众点评无公开 API、小红书反爬严格。<b>10 天里押爬虫，失败概率接近 1</b>；而且合规风险不可控</td>
+    </tr>
+    <tr>
+      <td>范围</td>
+      <td>「出去玩」（全国？哪都行？）</td>
+      <td>只做深圳，20 个商圈，每商圈 8–13 个点</td>
+      <td>一个人 10 天能标准的只有一座城市；范围一收，数据质量、算法参数、文档都能收敛</td>
+    </tr>
+    <tr>
+      <td>验收</td>
+      <td>「给出心目中的目的地」</td>
+      <td>输出 3 个「地点组合 + 时间线」，每个都带共识度与「谁让步最多」</td>
+      <td>「心目中的」不可验收，「共识度 0.73、最让步的是小林（0.71）」可验收</td>
+    </tr>
+  </table>
+  <p>同一套做法也用在了<b>不做清单</b>上。明确写进文档「不做」的东西，AI 就不会在实现时顺手加回来：
+  实时聊天、社交关注、微信授权、小程序（审核 3–7 天等不起）、多城市、支付、后台管理。
+  <span class="small">（其中“不做小程序”这一条后来证明是对的：传智杯提交窗口只有十天，审核时间直接吃掉三分之一。）</span></p>
+
+  <h3>2.2 上下文分五层</h3>
+  <p>「上下文」这个词，在我的用法里不是指「给 AI 贴多少代码」，而是<b>五层逐级加严的约束载体</b>。
+  越往下越难违反，因为违反了会立刻报错：</p>
+  <table>
+    <thead><tr><th style="width:9%">层</th><th style="width:22%">载体</th><th style="width:34%">约束什么</th><th>违反了会怎样</th></tr></thead>
+    <tr><td>L1</td><td><code>README.md</code>（项目宪法）</td><td>做哪个城市、给谁用、砍掉什么、slogan、答辩口径</td><td>人读一遍就能发现跑题，改回来成本最低</td></tr>
+    <tr><td>L2</td><td><code>docs/ALGORITHM.md</code>（公式）</td><td>每个系数的值、每个惩罚的方向、为什么这样定义公平</td><td>文档与代码不一致时，测试会红（测试注释直接引用章节号）</td></tr>
+    <tr><td>L3</td><td><code>data/*.csv</code> + <code>algo/loader.py</code></td><td>字段类型、枚举值、坐标范围、营业时间区间</td><td>启动即抛异常，不允许脏数据进内存</td></tr>
+    <tr><td>L4</td><td><code>backend/app/schemas.py</code></td><td>请求/响应形状、取值范围（如 <code>indoor_pref ∈ {-1,0,1}</code>）</td><td>422，并被压成人能看懂的文案</td></tr>
+    <tr><td>L5</td><td><code>tests/</code> + CI</td><td>行为契约：同一输入必须给同一输出</td><td>CI 红，推不上去</td></tr>
+  </table>
+  <p>五层里最有效的其实是 <b>L3 和 L5</b>，因为它们<b>不依赖我记性</b>。
+  举例：某次我让 AI 新增「品类偏好」字段，它很自然地想往 <code>CATEGORIES</code> 里塞一个新品类「书店」；
+  但 <code>algo/types.py</code> 里 7 个品类是封闭枚举，<code>loader.py</code> 会逐列校验，
+  于是它只能回头把「书店」映射到已有的「展览」——
+  <b>不是靠我提醒，是靠枚举挡住了</b>。</p>
+
+  <h3>2.3 四类提示词骨架</h3>
+  <p>我给 AI 的请求从来不是「帮我实现 X」，而是四种骨架之一。骨架的价值在于：<b>它把验收标准写进了请求本身</b>。</p>
+  <table>
+    <thead><tr><th style="width:15%">骨架</th><th style="width:34%">结构</th><th style="width:26%">真实例子（节选）</th><th>为什么有效</th></tr></thead>
+    <tr>
+      <td>验收标准式</td>
+      <td>目标 + 可复现命令 + 期望 stdout + 不许破坏的既有行为</td>
+      <td>「把地点库扩到 150 条以上，要求：每个商圈至少 3 个室外点；<code>python -m scripts.seed</code> 要输出总条数；<code>pytest</code> 不许红；错标只改 CSV 一行就能修」</td>
+      <td>「至少 3 个室外点」是数字，能立刻检验；「错标改一行」决定了数据与代码必须解耦</td>
+    </tr>
+    <tr>
+      <td>诊断优先式</td>
+      <td>先分析、给选项、不要动代码；人拍板后再实现</td>
+      <td>「先不要急着修改代码，先分析问题出在哪然后告诉我」</td>
+      <td>避免「猜一个原因就打补丁」。本次诊断出<b>三层</b>原因，只改最上面一层会白干（详见 2.6）</td>
+    </tr>
+    <tr>
+      <td>降级要求式</td>
+      <td>主路径 + 「XX 挂了也必须能跑」</td>
+      <td>「天气接口两个源都挂时，建局不能失败，退回手动选」</td>
+      <td>强制 AI 写出 <code>except</code> 分支，而不是让整条链路依赖外部服务</td>
+    </tr>
+    <tr>
+      <td>数字核对式</td>
+      <td>让 AI 自己数、自己改，并列出改了什么</td>
+      <td>「把 README 里的行数、测试数、地点数与代码对齐，逐条报差异」</td>
+      <td>文档里的数字是最容易腐烂的部分；本次核对揪出 9 处偏差（见 5.4）</td>
+    </tr>
+  </table>
+  <div class="quote">「降级要求式」是我从失败里学到的。早期让 AI 接高德接口，它写得很干净——直到我拿真 Key 一跑，
+  发现「关键词搜出来的 typecode 不可信」：搜「剧本杀」首条返回的是咖啡厅的 typecode。<b>如果请求里没写「拿不到怎么办」，AI 默认假设「拿得到」。</b></div>
+
+  <h3>2.4 四类典型失控与对策</h3>
+  <p>三天里 AI 反复犯的是同一批错误，所以我把对策也做成了固定动作：</p>
+  <table>
+    <thead><tr><th style="width:20%">失控类型</th><th style="width:34%">真实发生的一次</th><th>我的固定对策</th></tr></thead>
+    <tr>
+      <td>悄悄改需求</td>
+      <td>让它「修好室内偏好」，它顺手把「必须室内」做成了硬过滤（直接删掉所有室外点）</td>
+      <td>要求任何「过滤」都必须说明<b>删掉了多少候选</b>；默认只降权不删除，除非全组一致（见 3.x 全员排除规则）</td>
+    </tr>
+    <tr>
+      <td>只加常量不改公式</td>
+      <td>为了「别让方案只有 3 小时」，它加了 <code>UNDERFILL_PENALTY = 0.15</code>，但忘了把它乘进 score，白跑一次</td>
+      <td>之后所有评分改动必须给出<b>同一输入改前/改后的方案对比</b>；没有对比就当没改</td>
+    </tr>
+    <tr>
+      <td>编数字</td>
+      <td>README 里出现过「1 062 行算法被 47 个测试覆盖」，而当时实际是 1 319 行 / 69 个测试</td>
+      <td>所有规模数字必须附一句<b>怎么数出来的</b>；改完代码后强制重数（数字核对式提示）</td>
+    </tr>
+    <tr>
+      <td>假装完成</td>
+      <td>「已修复」但真实数据库里旧列还在，一写入就 500（<code>preferences.require_indoor</code> NOT NULL）</td>
+      <td>验收标准里必须包含<b>在真实库、真实端口上跑一次</b>，不接受「单元测试过了」</td>
+    </tr>
+  </table>
+
+  <h3>2.5 人机分工的边界</h3>
+  <p>我把决策分成两类，并且只对第一类负责：</p>
+  <ul>
+    <li><b>不可逆 / 有代价的决策——人拍板。</b>做哪个城市、用什么技术栈、砍掉哪些功能、要不要接大模型、要不要公网。
+    这些决策一旦错了，三天时间补不回来，所以我要求 AI 每次只给 2–3 个选项 + 各自代价，由我选。</li>
+    <li><b>可逆 / 可验证的实现——AI 主导。</b>具体算法实现、SQL 迁移写法、CSS 排版、测试用例。
+    这类东西错了有编译器和 CI 兜着。</li>
+  </ul>
+  <p>举个真实的分歧：我问「能不能把那一栏接入 AI 让它真听懂人话」。AI 的回答是先否掉一半——
+  <b>「只接 AI 修不好这个 bug」</b>：因为问题有三层（词表没有、字段是布尔只能表达「要室内」、数据里某个商圈 5 个点全是室内），
+  大模型只解第一层。然后它给了我 A/B/C 三个方案与各自工时，我选了 C（纯规则增强）。
+  这个选择后来被验证是对的：规则版解析 3 毫秒、可写测试、断网可用，而且真正让「不想去室内」生效的是<b>把布尔改成三态</b>，不是语言模型。</p>
+
+  <h3>2.6 诊断优先于修复：一次完整的三层排查</h3>
+  <p>用户报的原始问题是：「我说不想去室内，但依旧给我推荐室内去的地方，甚至所有人都说不想去但依旧推荐」。
+  请求里我明确写了「先不要改代码」。AI 交回的诊断把问题拆成三层，每层都有可复现的证据：</p>
+  <table>
+    <thead><tr><th style="width:12%">层</th><th style="width:36%">证据</th><th>如果只修这一层会怎样</th></tr></thead>
+    <tr>
+      <td>解析层</td>
+      <td><code>nlp.py</code> 的室内词表只有「下雨 / 台风 / 太晒 / 高温」等天气词，<b>没有「室内」这个词本身</b>；实测 6 句话全部解析为「未提及」</td>
+      <td>补词表能听懂，但结果仍然一样——因为下一层不认</td>
+    </tr>
+    <tr>
+      <td>字段层</td>
+      <td><code>Preference.require_indoor</code> 是布尔，只在为 <code>True</code> 时乘 0.2 惩罚；<code>False</code> 等于「没表态」</td>
+      <td>这是核心：<b>布尔表达不了「我不想」</b>，必须改成三态 <code>indoor_pref ∈ {-1,0,+1}</code> 并双向惩罚</td>
+    </tr>
+    <tr>
+      <td>数据层</td>
+      <td>49 个点里 26 个室内；而海岸城 5 个点<b>全部室内</b>，距离权重又是全表最高（0.30），「近的优先」必然导向室内</td>
+      <td>模型再对，池子里没有室外点也出不来室外方案</td>
+    </tr>
+  </table>
+  <p>这次排查直接决定了后面三天的路线：<b>改词表与否定引擎 → 改字段为三态 → 把数据从 49 条扩到 202 条</b>。
+  如果当时直接按「加个 AI 就好」的思路动手，三层里只会修第一层，而这个 bug 至今还活着。</p>
+
+  <h3>2.7 意图控制的账本</h3>
+  <p>把三天的协作结果记成账，比任何描述都直观：</p>
+  <table>
+    <thead><tr><th style="width:34%">意图</th><th style="width:22%">落成的约束</th><th>可检查的结果</th></tr></thead>
+    <tr><td>「不要玩具项目」</td><td>只做深圳 + 202 条人工标注 + 真实高德数据</td><td>数据体检脚本 <code>audit_pois.py</code> 报 0 处可疑</td></tr>
+    <tr><td>「不能是套壳开源项目」</td><td>自研效用函数 + 双聚合规则 + 组合搜索</td><td>69 个算法/解析测试钉住每个公式</td></tr>
+    <tr><td>「10 天 solo 能做完」</td><td>砍掉聊天/小程序/多城市/支付；技术栈按「能否独立写完 CRUD」定</td><td>3 天完成 39 次提交、125 个测试、CI 绿</td></tr>
+    <tr><td>「评委能跑起来」</td><td>零构建前端 + SQLite + 三条命令 + Dockerfile</td><td>洁净目录实测通过（第 4.2 节）</td></tr>
+    <tr><td>「别糊弄我」</td><td>数字核对式提示 + 已知局限带具体数字</td><td>自检揪出 9 处文档偏差并修正</td></tr>
+  </table>
+</section>
+
+<!-- ============ 3 ============ -->
+<section style="margin-top:26px">
+  <h2 class="sec"><span class="num">3</span>架构设计：AI 生成的代码被约束成了什么形状</h2>
+
+  <p>AI 写代码有一个稳定倾向：<b>把所有东西塞进路由函数里</b>，因为那样最短、最像「能跑」。
+  如果我只看结果不看结构，三天后会得到一个 800 行的 <code>main.py</code>——能演示，但没法测、没法改、没法答辩。
+  所以架构不是「设计出来的」，是<b>用规则逼出来的</b>。这一节讲清四层结构、每层被允许做什么，以及这些规则靠什么强制。</p>
+
+  <h3>3.1 四层与依赖方向</h3>
+<pre><code>web/index.html          单页前端（零构建、零依赖，806 行）
+      │  fetch /api/*
+      ▼
+backend/app/routers/    HTTP 层：校验入参、读写库、转格式（519 行）
+      │
+      ▼
+backend/app/services/   翻译层 + 服务：nlp / weather / recommender（747 行）
+      │
+      ├──────────────► algo/   纯算法包（1 319 行，不 import 任何框架）
+      │
+      ▼
+backend/app/models.py + db.py   ORM 与迁移（303 行）
+      │
+      ▼
+data/*.csv  ──seed──►  SQLite（chenke.db）</code></pre>
+  <p>依赖方向是<b>单向</b>的，这条规则可以用一行命令检查：</p>
+<pre><code>$ Select-String -Path algo\*.py -Pattern 'fastapi|sqlalchemy|starlette|pydantic'
+# （无输出）—— 算法层不认识任何一个 Web / ORM 库</code></pre>
+
+  <h3>3.2 为什么算法层不认识框架</h3>
+  <p>这不是洁癖，是三个具体收益：</p>
+  <ul>
+    <li><b>可测。</b>40 个算法测试直接 import <code>algo</code>，不需要数据库、不需要 HTTP、不需要起服务，跑完 3 秒。</li>
+    <li><b>可替换。</b>如果哪天要换 FastAPI → Flask，或者 SQLite → PostgreSQL，<code>algo/</code> 一行不用动。</li>
+    <li><b>可解释。</b>答辩时我能当场打开 <code>algo/utility.py</code> 指着公式说「这一项就是安静度的代价」，而不必在一堆 <code>@app.post</code> 里翻。</li>
+  </ul>
+  <p>为了让这条边界在「AI 加功能」时不被冲垮，中间必须有一层<b>唯一翻译层</b>：
+  <code>backend/app/services/recommender.py</code> 是<b>整个项目里唯一同时认识 ORM 和 <code>algo</code> 的文件</b>，
+  它只做三件事——把 <code>POIRecord</code> 转成 <code>POI</code>、把 <code>PreferenceRecord</code> 转成 <code>Preference</code>、调用一次 <code>run_recommendation()</code>。
+  换句话说：<b>想绕过算法层直接写业务逻辑，AI 得先绕过这个文件，而它只有 112 行</b>。</p>
+
+  <h3>3.3 契约先行</h3>
+  <p>「先定数据形状，再写逻辑」是我给 AI 的硬要求。项目里有三份契约：</p>
+  <table>
+    <thead><tr><th style="width:18%">契约</th><th style="width:26%">载体</th><th style="width:28%">校验方式</th><th>违反时的表现</th></tr></thead>
+    <tr><td>数据契约</td><td><code>data/pois_shenzhen.csv</code> 20 列</td><td><code>algo/loader.py</code> 逐列校验：品类必须在 7 个枚举内、经纬度在深圳范围内、营业时间 <code>0 ≤ open &lt; close ≤ 26</code></td><td>启动即抛 <code>ValueError</code>，并指出是哪一行哪一列</td></tr>
+    <tr><td>接口契约</td><td><code>backend/app/schemas.py</code></td><td>Pydantic 模型 + 约束（<code>indoor_pref: ge=-1, le=1</code>）</td><td>422，并被全局 handler 压成一句人话</td></tr>
+    <tr><td>行为契约</td><td><code>tests/</code> 125 个用例</td><td>同一输入必须同一输出（含时间线分钟数）</td><td>CI 红，推不上去</td></tr>
+  </table>
+  <p>契约先行带来的一个意外好处：<b>字段可以先于数据库演化</b>。
+  解析器最早就能输出 16 个字段，但数据库只有 11 列；
+  于是 <code>merge_hints()</code> 写成「<code>if key in merged: 才写</code>」——
+  解析器可以先上线、先显示灰色提示，等表结构补齐后再自动生效。这让「加字段」从一次性大改变成了三次小改。</p>
+
+  <h3>3.4 状态演化与迁移</h3>
+  <p>SQLite 的 <code>create_all()</code> 只会建表，<b>不会删列、不会改类型</b>。项目里踩过两次：</p>
+  <ol>
+    <li><b>补列</b>：<code>db.py</code> 里有一张 <code>_ADDED_COLUMNS</code> 表，启动时用 <code>PRAGMA table_info</code> 比对，缺哪列补哪列（<code>open_hour</code>、<code>start_hour</code>、<code>weather_text</code> 都是这样加进来的）。</li>
+    <li><b>改语义</b>：把 <code>require_indoor</code>（布尔）改成 <code>indoor_pref</code>（三态）时，老库还留着 <code>require_indoor NOT NULL</code>，
+    新插入不带它就 500：<code>sqlite3.IntegrityError: NOT NULL constraint failed: preferences.require_indoor</code>。
+    修法是 <code>_drop_legacy_indoor_flag()</code>：改名老表 → 重建新表 → <code>INSERT ... SELECT ..., CASE WHEN require_indoor THEN 1 ELSE 0 END</code> → 删老表。</li>
+  </ol>
+  <div class="box warn">
+    <b>这里有一次真实的失败，值得记下来：</b>第一次跑迁移报 <code>index ix_preferences_member_id already exists</code>——
+    因为 <b>SQLite 的索引名是全库唯一的</b>，把表改名后旧索引还在，新建表想用同名索引就撞了。
+    正确顺序是：<b>先收集旧索引名 → 改名 → <code>DROP INDEX</code> → 建表 → 拷数据 → 删老表</b>。
+    修好之后我造了一个老 schema 的库（含 <code>require_indoor</code>、唯一索引、两行数据）做回归，输出确认列已变成 <code>indoor_pref</code>、数据行数不变。
+  </div>
+
+  <h3>3.5 降级链</h3>
+  <p>这个项目有四个外部依赖，每一个都可能挂。架构上要求：<b>任何一个挂了，页面仍然能用</b>，只是精度下降。</p>
+  <table>
+    <thead><tr><th style="width:20%">依赖</th><th style="width:24%">失效表现</th><th style="width:26%">降级动作</th><th>用户看到什么</th></tr></thead>
+    <tr><td>高德路网（商圈通行）</td><td>表里查不到这对商圈 / 没网</td><td>退回球面距离 + 地铁/驾车两套参数估算</td><td>方案照常出，只是时间略粗；误差约 20%（最大例子：海岸城→龙华 估算 40、高德公交 83 分钟）</td></tr>
+    <tr><td>高德天气（4 天）</td><td>接口超时</td><td>换 Open-Meteo（7 天）；两个都挂 → 只影响「能选几天」</td><td>建局不失败，日期选择器仍然可用，点查不到时提示「可以先手动选天气」</td></tr>
+    <tr><td>两个天气源都挂</td><td>预报整表为空</td><td>返回 <code>in_range=true, kind=null</code></td><td>页面显示「这天的预报暂时没查到」，不拦建局</td></tr>
+    <tr><td>邀请码生成</td><td>重名冲突</td><td>6 位码循环重试；成员重名按昵称幂等</td><td>无感</td></tr>
+  </table>
+  <p>降级链的设计原则是<b>「坏消息要说清楚，但不许拦路」</b>：能算就算，算不准就标注，绝不因为一个可选数据源不可用就把主流程打断。</p>
+
+  <h3>3.6 复杂度预算</h3>
+  <p>AI 很容易把「优化」当成「上算法」。这个项目的搜索空间其实很小，所以架构上明确写死：<b>枚举，不上遗传算法</b>。</p>
+  <table>
+    <thead><tr><th style="width:22%">阶段</th><th style="width:26%">规模</th><th>实测</th></tr></thead>
+    <tr><td>单点打分</td><td>202 个地点 × 5 人</td><td>1 005 次打分</td></tr>
+    <tr><td>候选池</td><td>共识分前 24（最多 +4 个餐饮兜底）</td><td>—</td></tr>
+    <tr><td>组合枚举</td><td>C(20,3) = 1 140 种组合 × 6 种顺序</td><td>约 3 毫秒</td></tr>
+    <tr><td>多样性去重</td><td>Jaccard 阈值 0.20 → 0.34 → 1.01 逐级放宽</td><td>保证三个方案不共用前两个点</td></tr>
+  </table>
+  <p>「这个规模枚举就够了」在答辩里是个加分项：它说明我知道<b>什么时候不该上复杂算法</b>，
+  而不是把遗传算法当勋章。同理，第 3.7 节的前端也不用框架——单文件 806 行，评委双击就能开。</p>
+
+  <h3>3.7 前端策略</h3>
+  <p>前端只做了一个决策：<b>零构建</b>。一个 <code>web/index.html</code>，内联 CSS 与 JS，不装 npm、不打包、不依赖 CDN。
+  代价是我得手写状态管理（一个 <code>state</code> 对象 + <code>localStorage</code> 两个键）；收益是：</p>
+  <ul>
+    <li>评委 clone 下来 <b>只需要 Python</b>，不必先跑 <code>npm install</code>（这一步在国内网络下经常卡十分钟）；</li>
+    <li>静态页由 FastAPI 直接挂载，<b>改前端不用重启服务</b>（每次请求读磁盘）；</li>
+    <li>整个产品只有 64 个被跟踪文件，最大的是两张截图（161 KB）。</li>
+  </ul>
+
+  <h3>3.8 约束怎么被强制</h3>
+  <p>诚实地说：<b>分层依赖没有被工具自动检查</b>（Python 没有类似 Java 的模块依赖校验）。
+  它能保持，靠的是三件半自动的事：</p>
+  <ol>
+    <li><b>CI 的四道门</b>：<code>ruff check</code> → <code>python -m scripts.seed</code>（数据契约）→ <code>pytest</code>（行为契约）→ 真起服务 <code>curl /api/health</code> 与 <code>/api/areas</code>（端到端）。</li>
+    <li><b>一行 grep</b>：新增 <code>algo/</code> 文件时，跑一次第 3.1 节那条命令，有输出就说明层被污染了。</li>
+    <li><b>文件大小直觉</b>：<code>recommender.py</code> 112 行、<code>routers/</code> 每个文件不到 350 行。某个文件突然变两倍，通常意味着职责混了。</li>
+    <li><b>文档里写明禁令</b>：<code>docs/ALGORITHM.md</code> 开头就写着「本文档对应 <code>algo/</code> 里的每一个函数」，AI 每次改算法都要顺手改这一节，改不动就说明改错了层。</li>
+  </ol>
+</section>
+
+<!-- ============ 4 ============ -->
+<section style="margin-top:26px">
+  <h2 class="sec"><span class="num">4</span>可复现性论证</h2>
+
+  <h3>4.1 结论先行</h3>
+  <div class="box dark">
+    <b>任何一台装了 Python 3.10+ 的机器，clone 仓库后执行三条命令，就能得到本文档描述的同一套结果：</b><br><br>
+    <code>pip install -r requirements.txt</code><br>
+    <code>python -m scripts.seed</code>　　　　→ 期望输出：<b>共 202 条</b><br>
+    <code>python -m uvicorn app.main:app --app-dir backend</code>　→ 打开 <code>http://127.0.0.1:8000</code>
+  </div>
+  <p>「同一套结果」指四件事：<b>202 条数据进库、125 个测试全绿、示例局的推荐结果与文档一致、页面能打开并投票</b>。
+  下面用一次真实实验来证明，而不是断言。</p>
+
+  <h3>4.2 洁净检出实验</h3>
+  <p>实验方法：<b>不用现有工作目录</b>，而是把 <code>HEAD</code> 导出成一个纯文本归档，解到一个空目录里跑。
+  这样能同时验证「仓库里该有的东西都有」和「不该有的东西（虚拟环境、数据库、密钥）都没被误提交」。</p>
+  <table>
+    <thead><tr><th style="width:6%">#</th><th style="width:40%">命令</th><th>实际输出（原文）</th></tr></thead>
+    <tr><td>0</td><td><code>git archive --format=tar HEAD -o clean.tar</code> → 解到空目录</td><td>还原出 18 个顶层条目；<code>.venv</code> / <code>.env</code> / <code>*.db</code> / <code>.tmp</code> <b>均不存在</b></td></tr>
+    <tr><td>1</td><td><code>python -m scripts.seed</code></td><td><code>✅ 地点库已更新：新增 202 条，更新 0 条，共 202 条</code></td></tr>
+    <tr><td>2</td><td><code>pytest -q tests</code></td><td><code>125 passed, 1 warning in 11.88s</code></td></tr>
+    <tr><td>3</td><td><code>python -m scripts.demo</code></td><td>exit code <code>0</code>；终端打印 3 个方案的共识度与投票结果</td></tr>
+    <tr><td>4</td><td><code>uvicorn app.main:app --port 8021</code></td><td><code>/api/health</code> → <code>{"status":"ok","app":"尘客","version":"0.1.0"}</code></td></tr>
+    <tr><td>5</td><td><code>GET /api/areas</code> / <code>GET /api/pois</code></td><td>20 个商圈；202 个地点</td></tr>
+    <tr><td>6</td><td><code>POST /api/demo</code> → <code>POST /api/groups/{code}/recommend</code></td><td>3 个方案，共识度 <code>0.735 / 0.691 / 0.645</code>，notes 为 <code>["💧 检测到降雨，已自动优先室内地点"]</code></td></tr>
+    <tr><td>7</td><td><code>GET /</code></td><td>首页 33 406 字节（单页应用本体）</td></tr>
+  </table>
+  <p class="small">注：实验在 Windows 10 + Python 3.12.14 上进行；端口换 8021 是为了不干扰已在 8000 运行的实例。
+  CI 上等价的一组动作（Linux + Python 3.10/3.12）由 <code>.github/workflows/ci.yml</code> 每次 push 自动执行，当前为绿。</p>
+
+  <h3>4.3 确定性的来源与残余风险</h3>
+  <p>「可复现」不只是「能跑」，还要「跑出同样的东西」。项目里可能引入不确定性的地方，我逐个查过：</p>
+  <table>
+    <thead><tr><th style="width:24%">不确定源</th><th style="width:14%">是否存在</th><th>处理</th></tr></thead>
+    <tr><td>随机数</td><td><b>算法层没有</b></td><td>全仓库唯一用到 <code>random</code> 的地方是 <code>routers/groups.py</code> 生成 6 位邀请码——它是标识，不参与排序</td></tr>
+    <tr><td>集合/字典遍历顺序</td><td>不影响结果</td><td>集合只用于去重与成员判断，<b>所有对外输出都先排序</b>；排序键是浮点分数，同分时靠 Python 稳定排序保持枚举顺序</td></tr>
+    <tr><td>时间 / 时区</td><td>影响天气与时间线</td><td>时间线由 <code>start_minute</code>（整数分钟）+ 偏移量决定，与系统时钟无关；天气按 <code>Asia/Shanghai</code> 取日期，缓存 30 分钟</td></tr>
+    <tr><td>浮点累加</td><td>存在</td><td>对外只输出 1–2 位小数；测试断言用 <code>pytest.approx</code> 而不是等值</td></tr>
+    <tr><td>网络</td><td>不影响测试</td><td>9 个天气测试全部 <code>monkeypatch</code> 掉 <code>forecast_map</code>，CI 无网也全绿</td></tr>
+  </table>
+
+  <h3>4.4 外部依赖与断网策略</h3>
+  <p>这个项目在最坏情况下（无网、无 Key、无云）依然能完成「建局 → 填偏好 → 出方案 → 投票」的完整闭环。原因是两个依赖都被<b>提前固化进了仓库</b>：</p>
+  <ul>
+    <li><b>通行时间</b>：190 对商圈 × 驾车/公交 = 380 行，已经用高德路径规划算好写进 <code>data/area_travel.csv</code>（11 KB），跟仓库一起走。
+    不预计算的代价是：一次推荐要算 24² 量级的两两时间，免费配额会被枚举打光。</li>
+    <li><b>天气</b>：只有「选日期自动查天气」用到网络；查不到就退回手动选，<b>建局不会失败</b>。</li>
+    <li><b>数据标注</b>：9 个人工字段是离线完成并写进 CSV 的，运行时一个外部请求都不发。</li>
+  </ul>
+
+  <h3>4.5 环境矩阵</h3>
+  <table>
+    <thead><tr><th style="width:26%">环境</th><th style="width:22%">状态</th><th>备注</th></tr></thead>
+    <tr><td>Windows 10 + Python 3.12.14</td><td>开发环境，全绿</td><td>125 测试通过；本机服务 /api/health 200</td></tr>
+    <tr><td>Linux + Python 3.12（GitHub Actions）</td><td>绿</td><td>每次 push 自动跑：ruff → seed → pytest → 起服务 curl</td></tr>
+    <tr><td>Linux + Python 3.10（GitHub Actions）</td><td>绿</td><td>验证没有用到 3.11+ 语法</td></tr>
+    <tr><td>Docker（Dockerfile 多阶段）</td><td>已提供未本地验证</td><td>仓库有 <code>Dockerfile</code>（32 行，非 root，<code>CMD seed &amp;&amp; uvicorn</code>），作者本机未安装 Docker，此项属于<b>未验证项</b>，如实说明</td></tr>
+  </table>
+
+  <h3>4.6 数据与版本快照</h3>
+  <p>为了让「同一套数据」可被核对，文档里给出关键文件的 SHA-256 前缀（完整值可用 <code>certutil -hashfile</code> 或 <code>sha256sum</code> 复核）：</p>
+  <table>
+    <thead><tr><th style="width:34%">文件</th><th style="width:22%">大小</th><th>SHA-256（前 16 位）</th></tr></thead>
+    <tr><td><code>data/pois_shenzhen.csv</code></td><td>36 312 B</td><td><code>cba9cfb9f5f3b9c6</code></td></tr>
+    <tr><td><code>data/area_travel.csv</code></td><td>11 549 B</td><td><code>e68d7c15706d8d7c</code></td></tr>
+    <tr><td><code>requirements.txt</code></td><td>430 B</td><td><code>9211f0ecfcf08fdc</code></td></tr>
+    <tr><td><code>web/index.html</code></td><td>36 401 B</td><td><code>afc369798c9f9c7c</code></td></tr>
+  </table>
+  <p>开发环境实测版本（不是「大于等于」，是当时真实装上的）：<code>fastapi 0.162.2</code>、<code>starlette 1.10.0</code>、
+  <code>pydantic 2.14.3</code>、<code>SQLAlchemy 2.1.8</code>、<code>uvicorn 0.54.0</code>、<code>pytest 9.2.0</code>、<code>httpx 0.28.1</code>。
+  运行时依赖只有 7 个（<code>requirements.txt</code> 里可数）。</p>
+
+  <h3>4.7 复现失败时的定位手册</h3>
+  <p>按概率从高到低列出我实际踩过的坑。这些不是理论风险，全部真实发生过并已修：</p>
+  <table>
+    <thead><tr><th style="width:30%">现象</th><th style="width:30%">根因</th><th>修法（仓库里已有的）</th></tr></thead>
+    <tr><td><code>ModuleNotFoundError: app</code></td><td>没加 <code>--app-dir backend</code></td><td>按 README 的三条命令，或直接用 <code>run.ps1</code> / <code>run.sh</code></td></tr>
+    <tr><td><code>sqlite3.IntegrityError: NOT NULL constraint failed</code></td><td>用老版本数据库文件跑新代码</td><td>删掉 <code>chenke.db</code> 重新 <code>seed</code>；或让 <code>init_db()</code> 自动迁移（已实现）</td></tr>
+    <tr><td>中文在 Windows 控制台乱码 / 脚本报「字符串缺少终止符」</td><td>PowerShell 5.1 按 ANSI 读无 BOM 的 UTF-8 脚本</td><td><code>run.ps1</code> 已存成 <b>UTF-8 with BOM</b>；<code>seed.py</code> 里也做了 <code>sys.stdout.reconfigure(encoding="utf-8")</code></td></tr>
+    <tr><td>改了代码但接口行为没变</td><td>访问 <code>127.0.0.1</code> 命中了另一个更早启动的进程（Windows 允许 <code>0.0.0.0:8000</code> 与 <code>127.0.0.1:8000</code> 同时监听）</td><td><code>netstat -ano | findstr :8000</code> 查占用，只保留一个；日常用 <code>--reload</code></td></tr>
+    <tr><td><code>git push</code> 超时但网页能开</td><td>DNS 把 <code>github.com</code> 解析到不可达的 IP</td><td>与代码无关；换网络或配代理后重试</td></tr>
+    <tr><td>天气接口不通导致建局失败</td><td>早期版本未实现降级</td><td>已实现：查不到退回手动选，<b>建局永不失败</b></td></tr>
+  </table>
+</section>
+
+<!-- ============ 5 ============ -->
+<section style="margin-top:26px">
+  <h2 class="sec"><span class="num">5</span>验收附录</h2>
+
+  <h3>5.1 测试分布</h3>
+  <table>
+    <thead><tr><th style="width:26%">文件</th><th style="width:12%">用例数</th><th>钉住的是什么</th></tr></thead>
+    <tr><td><code>tests/test_algo.py</code></td><td>40</td><td>效用函数的每一项、共识分、Borda、minimax regret、组合搜索、时间线偏移、加载器校验、全员排除、三态室内偏好</td></tr>
+    <tr><td><code>tests/test_api.py</code></td><td>26</td><td>17 个接口的端到端行为、重名幂等、投票并列、422 文案、首页必须给「回首页」的出口</td></tr>
+    <tr><td><code>tests/test_nlp.py</code></td><td>29</td><td>一句话解析：否定、条件句、品类、时长、出发时间、与滑杆的优先级</td></tr>
+    <tr><td><code>tests/test_hours.py</code></td><td>16</td><td>高德时间串解析、跨零点（18:00–02:00）、打烊降权、老 CSV 无列时的默认</td></tr>
+    <tr><td><code>tests/test_travel.py</code></td><td>5</td><td>通行表查询、驾车/公交不同、查不到就退估算、表必须随仓库发布</td></tr>
+    <tr><td><code>tests/test_weather.py</code></td><td>9</td><td>天气词到四种类别的映射、7 天窗口、超范围提示、手动优先于预报、<b>无预报仍能建局</b></td></tr>
+  </table>
+
+  <h3>5.2 接口清单</h3>
+  <p>共 17 个，全部有真实样例（<code>docs/API.md</code>），并自动生成 OpenAPI 文档（<code>/docs</code>）：</p>
+  <table>
+    <thead><tr><th style="width:8%">方法</th><th style="width:34%">路径</th><th>作用</th></tr></thead>
+    <tr><td>GET</td><td><code>/api/health</code></td><td>健康检查（容器探针 / CI 用）</td></tr>
+    <tr><td>POST</td><td><code>/api/demo</code></td><td>一键生成填好的示例局（5 人，进来就能看结果）</td></tr>
+    <tr><td>POST</td><td><code>/api/groups</code></td><td>建局，返回 6 位邀请码</td></tr>
+    <tr><td>GET</td><td><code>/api/groups/{code}</code></td><td>局的信息 + 成员列表</td></tr>
+    <tr><td>POST</td><td><code>/api/groups/{code}/members</code></td><td>用昵称入局（重名幂等）</td></tr>
+    <tr><td>PUT</td><td><code>/api/members/{id}/preference</code></td><td>填/改偏好，可带一句话自动解析</td></tr>
+    <tr><td>GET</td><td><code>/api/members/{id}/preference</code></td><td>读偏好</td></tr>
+    <tr><td>POST</td><td><code>/api/parse</code></td><td>只解析一句话、不保存（前端实时提示）</td></tr>
+    <tr><td>POST</td><td><code>/api/groups/{code}/recommend</code></td><td>生成 3 个方案</td></tr>
+    <tr><td>GET</td><td><code>/api/groups/{code}/plans</code></td><td>读取上次生成的方案</td></tr>
+    <tr><td>POST</td><td><code>/api/plans/{id}/vote</code></td><td>投票（幂等）</td></tr>
+    <tr><td>GET</td><td><code>/api/groups/{code}/votes</code></td><td>票数统计（并列都标最高）</td></tr>
+    <tr><td>GET</td><td><code>/api/pois</code></td><td>地点列表，支持商圈/品类/室内过滤</td></tr>
+    <tr><td>GET</td><td><code>/api/areas</code></td><td>商圈列表</td></tr>
+    <tr><td>POST</td><td><code>/api/reviews</code></td><td>玩完之后的评价</td></tr>
+    <tr><td>GET</td><td><code>/api/pois/{id}/reviews</code></td><td>某个地点的评价</td></tr>
+    <tr><td>GET</td><td><code>/api/weather?date=YYYY-MM-DD</code></td><td>查那天的天气（7 天内；查不到会说查不到）</td></tr>
+  </table>
+
+  <h3>5.3 数据字段与分布</h3>
+  <p>20 列里，<b>11 列来自高德</b>（名称、坐标、行政区、地址、电话、评分、人均、营业时间、商圈距离等），
+  <b>9 列是自己标注的</b>（商圈归属、室内外、安静度、人数上下限、带娃、预约、排队、标签、一句话理由）。
+  没有爬任何点评类站点——这是合规底线，也是答辩时第一个可能被问到的点。</p>
+  <table>
+    <thead><tr><th style="width:26%">品类</th><th style="width:12%">条数</th><th style="width:26%">品类</th><th>条数</th></tr></thead>
+    <tr><td>公园</td><td>58</td><td>餐饮</td><td>22</td></tr>
+    <tr><td>玩乐</td><td>38</td><td>咖啡</td><td>18</td></tr>
+    <tr><td>展览</td><td>34</td><td>夜生活</td><td>10</td></tr>
+    <tr><td>影院</td><td>22</td><td>合计</td><td><b>202</b></td></tr>
+  </table>
+  <p>室内 122 / 室外 80，<b>每个商圈至少 3 个室外点</b>——这条数字是硬要求，因为它是「说不想去室内却推室内」那个 bug 的数据层根因。</p>
+
+  <h3>5.4 已知局限（带数字）</h3>
+  <p>这一节不是免责声明，是<b>取舍清单</b>。能修的四条已经修完（营业时间、通行时间、全员排除、数据体检），剩下的三条是刻意不做：</p>
+  <ol>
+    <li><b>只做了深圳。</b>换城市要重跑 <code>fetch_amap → shortlist → draft_labels → backfill_hours</code>，再人工复核约 2 天。</li>
+    <li><b>一句话解析是规则版，不是大模型。</b>16 个字段、约 3 毫秒、可写测试、断网可用；代价是听不懂太绕的说法。
+    这是刻意的：让模型只做「人话 → 结构化约束」，推荐结果仍由可解释的效用函数决定。</li>
+    <li><b>营业时间只到「这个点还开不开」，不到「今天开不开」。</b>没有节假日数据，元旦去美术馆可能吃闭门羹。</li>
+  </ol>
+  <p>另外两条是「做了但没做到底」，也写清数字：通行时间表只覆盖 20 个商圈两两（190 对），同商圈内部仍是估算，误差约 20%；
+  202 条里有一半是脚本先猜、人工复核，<code>scripts/audit_pois.py</code> 目前报 <b>0 处可疑</b>，发现错标改一行 CSV 再 <code>seed</code> 即可。</p>
+
+  <h3>5.5 三分钟复现清单</h3>
+  <div class="box">
+    <ol style="margin:0">
+      <li><code>git clone https://github.com/Chenk44/chenke &amp;&amp; cd chenke</code></li>
+      <li><code>python -m venv .venv</code> → 激活 → <code>pip install -r requirements.txt</code>（7 个依赖，无编译）</li>
+      <li><code>python -m scripts.seed</code>　→ 看到 <b>共 202 条</b></li>
+      <li><code>python -m uvicorn app.main:app --app-dir backend</code></li>
+      <li>浏览器打开 <code>http://127.0.0.1:8000</code>，点「先看一个示例局」→ 五秒后看到三个方案</li>
+      <li>（可选）<code>pytest -q</code>　→ 看到 <b>125 passed</b>；<code>python -m scripts.demo</code>　→ 终端里跑完整流程</li>
+    </ol>
+  </div>
+  <h2 class="sec page-break" style="margin-top:0"><span class="num">6</span>附录：需求原话与它落成的约束</h2>
+  <p>这一节把第 2 节的方法落到证据上：下面是三天里<b>原话</b>（未改写，只去掉语气词），
+  以及我当时从这句话里提取出的、<b>可以检查的约束</b>。它同时也是「我不是想到哪做到哪」的证明——
+  每一次需求变更都能对应到一次提交或一条测试。</p>
+  <table>
+    <thead><tr><th style="width:30%">需求原话</th><th style="width:44%">我提取的约束</th><th>落在哪</th></tr></thead>
+    <tr><td>「开发一款应用…综合各平台推荐…给出我们心目中的目的地」</td>
+        <td>数据源只能用合法结构化数据；输出必须说清「谁让了步」</td>
+        <td>§2.1、README 第 1 节</td></tr>
+    <tr><td>「python吧」</td>
+        <td>技术栈锁定 Python；动态类型的短板用 pytest + ruff + 类型注解 + CI 补回来</td>
+        <td><code>pyproject.toml</code>、<code>.github/workflows/ci.yml</code></td></tr>
+    <tr><td>「先做C。纯规则增强…我想把能去玩的地点再增加，你先帮我列出来」</td>
+        <td>先给清单让人选，不许直接开工；规则侧目标 16 字段；数据 49 → 202，每商圈至少 3 个室外点</td>
+        <td>§2.3 验收标准式；<code>data/pois_shenzhen.csv</code></td></tr>
+    <tr><td>「with_elder没必要，你先验证一下高德api吧」</td>
+        <td>砍功能要明确记进「不做清单」；外部依赖先拿真 Key 探活再写代码</td>
+        <td>§2.1 不做清单；<code>scripts/fetch_amap.py</code></td></tr>
+    <tr><td>「先不要急着修改代码，先分析问题出在哪然后告诉我」</td>
+        <td>诊断先于修复；结论必须分层，每层给可复现证据</td>
+        <td>§2.6 三层排查表</td></tr>
+    <tr><td>「1.生成完一轮之后我无法退回主页面　2.我说不想去室内，但依旧给我推荐室内」</td>
+        <td>两个独立缺陷；第二个拆成「听不懂 / 字段表达不了 / 数据里没有」三层</td>
+        <td>§2.6、<code>indoor_pref</code> 三态、<code>test_page_always_offers_a_way_back_home</code></td></tr>
+    <tr><td>「1」（回选项）</td>
+        <td>凡是有多条路线，先给 A/B/C 和各自代价，只回编号就能推进</td>
+        <td>§2.3 选项式提问</td></tr>
+    <tr><td>「我想直接选择日期然后调用那一天的天气（一周之内的天气）」</td>
+        <td>窗口 7 天；查不到要说「查不到」而不是猜；接口挂了建局也不能失败</td>
+        <td>§3.5 降级链、<code>services/weather.py</code></td></tr>
+    <tr><td>「不需要公网了，没这个需求」</td>
+        <td>删掉隧道脚本与文档段落，不保留「以后可能有用」的死代码</td>
+        <td>提交 <code>412805c</code></td></tr>
+    <tr><td>「首先先把公网相关的可以删了，然后自检吧」</td>
+        <td>自检必须是数字核对，不是「我检查过了」</td>
+        <td>§2.4 数字核对式、§4.6 快照表</td></tr>
+  </table>
+
+  <h3 style="margin-top:18px">6.1 文中每个数字的核对命令</h3>
+  <p>评委如果想验证这份文档没在编数字，下面四条命令可以复现文中绝大多数统计。输出应与 §1.2 的规模表、§4.6 的快照表逐位一致；不一致说明文档腐坏了，按 §2.4 的「数字核对式」重新生成，而不是手工改一个数字了事。</p>
+  <pre><code># 测试数
+python -m pytest --collect-only -q tests | tail -1
+
+# 代码行数（含空行、含 __init__.py）
+python -c "import pathlib;[print(f, len(pathlib.Path(f).read_text(encoding='utf-8').splitlines())) for f in ['algo/utility.py']]"
+
+# 数据规模
+python -c "import csv;print(len(list(csv.DictReader(open('data/pois_shenzhen.csv',encoding='utf-8')))))"
+
+# 提交数与文件指纹
+git rev-list --count HEAD
+python -c "import hashlib;print(hashlib.sha256(open('web/index.html','rb').read()).hexdigest()[:16])"</code></pre>
+
+  <h2 class="sec" style="margin-top:22px"><span class="num">6.2</span>被拒绝的三条技术路线</h2>
+  <p>同样重要的是「没做什么」。下面三条我都认真算过成本，也都在不同时间点上放弃了，
+  理由写在这里，因为答辩时它们比成功路径更容易被问到：</p>
+  <table>
+    <thead><tr><th style="width:22%">路线</th><th style="width:40%">如果做了会怎样</th><th>为什么放弃</th></tr></thead>
+    <tr><td>让大模型直接推荐地点</td>
+        <td>十行代码就能出「听起来很美」的答案，演示效果立刻变好</td>
+        <td>① 评委问「为什么是这家」时只能回答「模型说的」；② 断电断网即废；
+        ③ 同样的输入不保证同样的输出，§4.3 的确定性论证整节作废</td></tr>
+    <tr><td>爬大众点评 / 小红书补「多平台」</td>
+        <td>数据量能翻十倍，也更像「综合各平台」</td>
+        <td>① 都没有公开 API，反爬强度高；② 10 天窗口里失败概率接近 1；
+        ③ 合规风险不可控——这一条足以让作品在合规审查上直接出局</td></tr>
+    <tr><td>做微信小程序 / 接微信登录</td>
+        <td>分享到群里更顺手，看起来更「完成」</td>
+        <td>① 小程序审核 3–7 天，评审窗口只剩 10 天；② 授权要企业主体；
+        ③ 同一套 H5 + 6 位邀请码已经能覆盖「发到群里大家各填各的」这个核心动作</td></tr>
+  </table>
+  <p>这三条的共同点是：<b>它们都能让演示更好看，但都会削弱「这东西为什么可信」</b>。
+  在一个三天能跑起来的项目里，删掉一条路线省下的不是代码量，而是答辩时无法回答的问题。</p>
+
+  <p class="small" style="margin-top:14px">— 文档结束 —</p>
+</section>
+
+</body>
+</html>

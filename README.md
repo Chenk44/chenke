@@ -267,6 +267,15 @@ web/index.html          点「生成方案」
 
 完整定义见 `/docs`（OpenAPI），或 [docs/API.md](docs/API.md)。
 
+## 七点五、技术文档
+
+比赛用的技术报告在这里（16 页 A4，PDF）：
+
+- [尘客技术文档.pdf](docs/尘客技术文档.pdf) — 意图控制策略（怎么设计上下文与提示词）、
+  架构设计与约束方式、可复现性论证，附录给出了需求原话与本文每个数字的核对命令。
+- 源文件是 [docs/tech-report.html](docs/tech-report.html)，改完用 Edge 无头打印即可重新导出：
+  `msedge --headless=new --no-pdf-header-footer --print-to-pdf=docs/尘客技术文档.pdf file:///D:/bisai/docs/tech-report.html`
+
 ## 八、部署
 
 ```bash
