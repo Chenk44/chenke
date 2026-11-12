@@ -141,11 +141,11 @@ python -m pytest -q
 ## 五、项目结构
 
 四层：**纯算法包 → Web 壳 → 一张数据表 → 单页前端**。分层的唯一目的是——
-让算法能脱离框架单独测试。下面的行数是 `Get-Content | Measure-Object -Line` 数出来的真实值。
+让算法能脱离框架单独测试。下面的行数是按文件逐行数出来的（含空行与 `__init__.py`），改完代码记得回头对一遍。
 
 ```
 .
-├── algo/                      1 291 行  纯 Python，不 import 任何 Web / ORM 库
+├── algo/                      1 319 行  纯 Python，不 import 任何 Web / ORM 库
 │   ├── types.py                 136     POI / Preference / Plan；含「几点还开着」的判定
 │   ├── geo.py                    62     球面距离 + 通行时间估算（地铁/驾车两套参数）
 │   ├── travel.py                 74     商圈通行表：查得到用真实路网，查不到退回估算
@@ -155,9 +155,9 @@ python -m pytest -q
 │   ├── pipeline.py              196     把上面几步编排成一次 run()
 │   └── loader.py                178     读 CSV 并逐列校验（脏数据启动即报错）
 ├── backend/app/               2 068 行  Web 层，只做三件事：校验、读写库、转格式
-│   ├── main.py                  116     FastAPI 入口、CORS、静态挂载、422 文案、/api/netinfo
+│   ├── main.py                  117     FastAPI 入口、CORS、静态挂载、422 文案、/api/netinfo
 │   ├── config.py                 39     pydantic-settings 读 .env
-│   ├── db.py                    122     引擎、建表、老库补列与布尔列迁移
+│   ├── db.py                    124     引擎、建表、老库补列与布尔列迁移
 │   ├── models.py                179     7 张表：局/成员/偏好/地点/方案/投票/评价
 │   ├── schemas.py               223     请求响应模型（OpenAPI 文档就是它生成的）
 │   ├── routers/groups.py        351     建局（按日期回填天气）、加入、填偏好、示例局
@@ -177,7 +177,7 @@ python -m pytest -q
 │   ├── test_nlp.py              148     一句话解析的边界（含否定与条件句）
 │   ├── test_hours.py            154     高德时间串解析、跨零点、打烊降权
 │   └── test_travel.py            55     商圈通行表查询与「查不到就估算」的兜底
-├── scripts/                   1 703 行
+├── scripts/                   1 704 行
 │   ├── seed.py                   94     CSV → 数据库，可重复执行（--reset 清空重来）
 │   ├── demo.py                  175     命令行端到端演示：不开浏览器也能看到算法在干什么
 │   ├── fetch_amap.py            256     高德 POI 拉取（缓存、重试、直连兜底）
@@ -190,13 +190,13 @@ python -m pytest -q
 │   ├── audit_pois.py           116     数据体检：把可疑标注挑出来，人只复核这几行
 │   └── layout_probe.py          102     移动端布局体检（CDP 量宽度、找越界元素）
 ├── docs/
-│   ├── ALGORITHM.md             389     算法说明书：从痛点推到公式
-│   ├── API.md                   292     17 个接口 + 真实响应样例
-│   ├── DATA.md                  117     数据来源、标注口径、合规说明
+│   ├── ALGORITHM.md             468     算法说明书：从痛点推到公式
+│   ├── API.md                   350     17 个接口 + 真实响应样例
+│   ├── DATA.md                  139     数据来源、标注口径、合规说明
 │   └── preview-*.png                    README 用的两张真实截图
-├── .github/workflows/ci.yml      35     push 即跑：ruff → 灌数据 → 125 测试 → 真起服务 curl
+├── .github/workflows/ci.yml      44     push 即跑：ruff → 灌数据 → 125 测试 → 真起服务 curl
 ├── run.ps1 / run.sh                     一键启动（Windows / macOS+Linux）
-├── Dockerfile                    22     多阶段构建 + 非 root 用户
+├── Dockerfile                    32     多阶段构建 + 非 root 用户
 └── requirements.txt / pyproject.toml    依赖 7 个；pytest 与 ruff 配置
 ```
 
@@ -217,7 +217,7 @@ web/index.html          点「生成方案」
 
 三个刻意的分层决定，答辩时可以直接讲：
 
-1. **`algo/` 不 import FastAPI，也不 import SQLAlchemy**。1 062 行算法被 47 个算法与解析测试直接覆盖，
+1. **`algo/` 不 import FastAPI，也不 import SQLAlchemy**。1 319 行算法被 69 个算法与解析测试直接覆盖，
    跑测试不需要起服务、不需要连着数据库、不需要网络。算法是这个项目的价值，它必须能单独被验证。
 2. **`services/recommender.py` 是唯一同时认识两边的文件**。它导出 `record_to_poi` /
    `member_to_preference` / `run_recommendation` 三个函数；`algo` 反向完全不认识数据库。
@@ -275,32 +275,11 @@ docker run -p 8000:8000 chenke
 生产环境把 `DATABASE_URL` 换成 PostgreSQL 即可，代码里没有 SQLite 专有语句。
 其余配置见 `.env.example`。
 
-### 临时给不在同一个 WiFi 的朋友用
+### 同一 WiFi 下给朋友填
 
-开发时服务跑在自己电脑上，只有同一个局域网能打开。临时开一条隧道就行：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\share.ps1
-```
-
-它会先确认服务活着，再用系统自带的 `ssh` 通过 serveo.net 开一条隧道
-（走 443 端口，不下载任何东西，**隧道活着期间域名不变**），
-把 `https://xxx.serveousercontent.com` 这样的地址打印出来。
-
-两个备选：`-LocalhostRun` 用 localhost.run（免费版会轮换域名，只适合短时间试），
-`-Cloudflare` 用 Cloudflare 隧道（更快更稳，但要网络放行 7844 端口）：
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\share.ps1 -Cloudflare
-```
-
-三条要知道的：
-
-- **地址每次启动都不一样**，关掉窗口立刻失效，电脑休眠也会断。
-- 链接谁拿到都能建局，但**加入某个局仍然需要那 6 位邀请码**，且局里的数据只在你机器上。
-- 这是「今晚就要收偏好」的临时办法，**不适合当评委访问地址**（没有 uptime 保证、
-  每次重启换域名）。长期访问请用上面的 Docker 部署到一台云服务器，
-  阿里云/腾讯云最便宜的轻量应用服务器一年百来块，国内访问也快。
+服务监听 `0.0.0.0`，同一局域网的人可以直接访问你电脑的局域网地址
+（启动时 `run.ps1` 会把它打印出来，页面上也会提示换成本机 IP 的链接）。
+这个场景不需要任何额外配置，也没有额外暴露面。
 
 ## 九、已知局限
 

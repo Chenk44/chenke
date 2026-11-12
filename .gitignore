@@ -33,7 +33,7 @@ dist/
 build/
 *.zip
 
-# ¸ßµÂÔ­Ê¼ºòÑ¡£¨¿ÉÓÉ .tmp/amap_cache ÖØÅÜÉú³É£©
+# é«˜å¾·åŸå§‹å€™é€‰ï¼ˆå¯ç”± .tmp/amap_cache é‡è·‘ç”Ÿæˆï¼‰
 data/amap_candidates.csv
 
 pytest-of-*/
