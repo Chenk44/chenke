@@ -172,6 +172,14 @@ const state = {
   votes: [],
 };
 
+// 回首页。老写法是 `location.hash = ''`，但 hash 本来就是空的时候浏览器不会
+// 触发 hashchange，页面就卡在原地。这里直接改写 URL 再手动走一次路由，
+// 两种情况都能回得去。
+function goHome() {
+  history.pushState(null, "", location.pathname + location.search);
+  route();
+}
+
 function toast(msg) {
   const el = document.getElementById("toast");
   el.textContent = msg;
@@ -214,7 +222,19 @@ async function renderHome() {
   let areas = ["海岸城"];
   try { areas = await api("/areas"); } catch (e) { /* 离线时用默认值 */ }
 
+  // 首页不再「自动跳回上次那个局」（那样会让人出不来），改成给一个显式的入口。
+  const lastCode = localStorage.getItem("zk_code") || "";
+  const lastName = localStorage.getItem("zk_name") || "";
+
   $app.innerHTML = `
+    ${lastCode ? `<div class="card" style="padding:12px 16px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <div><b>上次的局</b>
+          <span class="hint" style="margin-left:8px">${esc(lastName || lastCode)} · ${esc(lastCode)}</span></div>
+        <button class="ghost" id="btn-resume" style="flex:0 0 auto">继续</button>
+      </div>
+    </div>` : ""}
+
     <div class="card">
       <h2>开一个新局<span class="hint">30 秒，然后把链接甩到群里</span></h2>
       <label class="field"><span>这个局叫什么</span>
@@ -254,6 +274,9 @@ async function renderHome() {
       </div>
       <button class="full" id="btn-join">加入这个局</button>
     </div>`;
+
+  const resume = document.getElementById("btn-resume");
+  if (resume) resume.onclick = () => { location.hash = "#g/" + lastCode; };
 
   document.getElementById("btn-create").onclick = async () => {
     const btn = document.getElementById("btn-create");
@@ -317,6 +340,7 @@ function renderJoin(code) {
         <input id="j2-nick" type="text" placeholder="小王" /></label>
       <button class="primary full" id="btn-join2">进入</button>
       <button class="ghost full" style="margin-top:8px" id="btn-skip">我是组织者，先看看</button>
+      <button class="ghost full" style="margin-top:8px" id="btn-join-home">← 回首页</button>
     </div>`;
   const go = async () => {
     const nick = document.getElementById("j2-nick").value.trim();
@@ -326,6 +350,7 @@ function renderJoin(code) {
   document.getElementById("btn-join2").onclick = go;
   document.getElementById("j2-nick").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
   document.getElementById("btn-skip").onclick = () => loadGroup(code);
+  document.getElementById("btn-join-home").onclick = goHome;
 }
 
 async function joinGroup(code, nickname) {
@@ -364,6 +389,7 @@ async function loadGroup(code) {
   localStorage.setItem("zk_code", code);
   const group = await api(`/groups/${code}`);
   state.group = group;
+  localStorage.setItem("zk_name", group.name || "");
 
   // localStorage 里的 memberId 可能来自上一个局。它在本局不存在时必须清掉，
   // 否则会拿别人的 id 去保存偏好/投票（后端直接 422，用户只看到一串英文报错）。
@@ -400,7 +426,10 @@ function renderPref() {
   $app.innerHTML = `
     <div class="steps"><div class="on"></div><div class="on"></div><div></div></div>
     <div class="card">
-      <h2>你的口味<span class="hint">别纠结，凭感觉拖</span></h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <h2 style="margin:0">你的口味<span class="hint">别纠结，凭感觉拖</span></h2>
+        <button class="ghost" id="btn-pref-home" style="flex:0 0 auto">首页</button>
+      </div>
       ${slider("quiet", "氛围", "要热闹", "要安静", p.quiet)}
       ${slider("price", "花钱", "能省则省", "舍得花", p.price)}
       ${slider("near", "距离", "越近越好", "跑远也行", p.near)}
@@ -430,6 +459,8 @@ function renderPref() {
     const input = document.getElementById(k);
     input.oninput = () => { document.getElementById(k + "-val").textContent = input.value; };
   });
+
+  document.getElementById("btn-pref-home").onclick = goHome;
 
   document.getElementById("chips").addEventListener("click", (e) => {
     const chip = e.target.closest(".chip");
@@ -561,7 +592,10 @@ async function renderGroupView() {
 
   $app.innerHTML = `
     <div class="card">
-      <h2>${esc(group.name)}<span class="hint">邀请码 ${esc(group.code)}</span></h2>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <h2 style="margin:0">${esc(group.name)}<span class="hint">邀请码 ${esc(group.code)}</span></h2>
+        <button class="ghost" id="btn-home" style="flex:0 0 auto">首页</button>
+      </div>
       <div class="muted" style="margin-bottom:10px">
         出发地 ${esc(group.origin_area)} · 玩 ${(group.window_minutes / 60).toFixed(1)} 小时
         ${group.budget ? " · 人均 ≤ ¥" + group.budget : ""}
@@ -602,6 +636,8 @@ async function renderGroupView() {
       })
       .catch(() => {});
   }
+
+  document.getElementById("btn-home").onclick = goHome;
 
   document.getElementById("btn-invite").onclick = async () => {
     const url = location.origin + location.pathname + "#g/" + group.code;
@@ -667,15 +703,17 @@ async function route() {
       await startDemo();
     } else if (hash.startsWith("g/")) {
       await loadGroup(hash.slice(2));
-    } else if (state.code) {
-      await loadGroup(state.code);
     } else {
+      // 这里**不能**再写回 `state.code` 的兜底。
+      // 之前「空 hash 就打开上次那个局」的写法，让首页变成永远到不了的地方：
+      // 生成方案之后既没有返回按钮，改地址栏也会被再次送回局里。
       await renderHome();
     }
   } catch (e) {
     $app.innerHTML = `<div class="card"><h2>出了点问题</h2>
       <div class="muted">${esc(e.message)}</div>
-      <button class="ghost full" style="margin-top:12px" onclick="localStorage.clear();location.hash='';location.reload()">回到首页</button></div>`;
+      <button class="ghost full" id="btn-err-home" style="margin-top:12px">回到首页</button></div>`;
+    document.getElementById("btn-err-home").onclick = goHome;
   }
 }
 

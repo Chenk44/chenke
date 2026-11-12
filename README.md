@@ -3,7 +3,7 @@
 <p>
   <a href="https://github.com/Chenk44/-/actions/workflows/ci.yml"><img src="https://github.com/Chenk44/-/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-3776ab" alt="python 3.10+">
-  <img src="https://img.shields.io/badge/tests-68%20passed-4dd4ac" alt="68 tests passed">
+  <img src="https://img.shields.io/badge/tests-69%20passed-4dd4ac" alt="69 tests passed">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license">
   <img src="https://img.shields.io/badge/data-49%20POIs%20%C2%B7%2019%20areas-orange" alt="49 POIs">
 </p>
@@ -134,7 +134,7 @@ Windows 用户也可以直接双击/运行仓库根目录的 `run.ps1`，它会�
 python -m pytest -q
 ```
 
-68 个测试，覆盖效用函数、聚合规则、组合搜索、一句话解析和全部 API 端点。
+69 个测试，覆盖效用函数、聚合规则、组合搜索、一句话解析和全部 API 端点。
 每个测试都对应文档里的一句话，改坏了 CI 会红。
 
 ## 五、项目结构
@@ -179,7 +179,7 @@ python -m pytest -q
 │   ├── API.md                   220     17 个接口 + 真实响应样例
 │   ├── DATA.md                   82     数据来源、标注口径、合规说明
 │   └── preview-*.png                    README 用的两张真实截图
-├── .github/workflows/ci.yml      35     push 即跑：ruff → 灌数据 → 68 测试 → 真起服务 curl
+├── .github/workflows/ci.yml      35     push 即跑：ruff → 灌数据 → 69 测试 → 真起服务 curl
 ├── run.ps1 / run.sh                     一键启动（Windows / macOS+Linux）
 ├── Dockerfile                    22     多阶段构建 + 非 root 用户
 └── requirements.txt / pyproject.toml    依赖 7 个；pytest 与 ruff 配置

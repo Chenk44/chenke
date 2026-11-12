@@ -237,3 +237,17 @@ def test_demo_group_is_ready_to_use(client):
     out = client.post(f"/api/groups/{data['code']}/recommend")
     assert out.status_code == 200, out.text
     assert len(out.json()["plans"]) == 3
+
+
+def test_page_always_offers_a_way_back_home(client):
+    """前端页面必须带着「回首页」的出口。
+
+    这条测试是给一个真实 bug 留的护栏：之前 route() 里有 `else if (state.code)`
+    的兜底，空 hash 会被当成「打开上次那个局」，而局内页面又没有返回按钮，
+    结果点完生成方案就再也回不到首页。前端没有 DOM 测试环境，所以这里退一步，
+    守住两个最容易再次消失的标记。
+    """
+    html = client.get("/").text
+    assert 'id="btn-home"' in html, "局内页面缺少返回首页的按钮"
+    assert 'id="btn-pref-home"' in html, "填偏好页面缺少返回首页的按钮"
+    assert "else if (state.code)" not in html, "路由里不应再把空 hash 当成「回到上次那个局」"
