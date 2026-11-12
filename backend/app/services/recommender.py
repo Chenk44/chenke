@@ -39,6 +39,8 @@ def record_to_poi(rec: POIRecord) -> POI:
         queue=rec.queue,
         tags=tuple(t for t in (rec.tags or "").split("|") if t),
         blurb=rec.blurb,
+        open_hour=rec.open_hour,
+        close_hour=rec.close_hour,
     )
 
 
@@ -101,6 +103,7 @@ def run_recommendation(db: Session, group: Group) -> Recommendation:
         weather=group.weather,
         window_minutes=group.window_minutes,
         top_k=3,
+        origin_area=group.origin_area,
     )
 
 

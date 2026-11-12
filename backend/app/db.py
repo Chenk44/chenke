@@ -58,6 +58,9 @@ _ADDED_COLUMNS: tuple[tuple[str, str, str], ...] = (
     ("preferences", "prefer_tags", "JSON"),
     ("preferences", "max_minutes", "INTEGER"),
     ("preferences", "start_hour", "INTEGER"),
+    # 营业时间：老库补成 0/24（等于全天），等下次 seed 再填真值
+    ("pois", "open_hour", "FLOAT DEFAULT 0"),
+    ("pois", "close_hour", "FLOAT DEFAULT 24"),
 )
 
 

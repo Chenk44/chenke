@@ -120,6 +120,8 @@ class PlanItemOut(BaseModel):
     blurb: str
     indoor: bool = True
     offset_minutes: float = Field(default=0.0, description="从出发算起第几分钟到，用于渲染时间线")
+    hours: str = Field(default="", description="营业时间，例如 10:00-22:00；空串表示全天")
+    closed: bool = Field(default=False, description="按时间线算，到这个点时已经打烊")
 
 
 class PlanOut(BaseModel):
@@ -184,6 +186,8 @@ class POIOut(BaseModel):
     kid_friendly: bool
     tags: list[str]
     blurb: str
+    open_hour: float = 0.0
+    close_hour: float = 24.0
 
 
 class ReviewIn(BaseModel):

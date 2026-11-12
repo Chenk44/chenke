@@ -422,3 +422,38 @@ def test_start_hour_defaults_when_nobody_says_anything():
     pois, prefs = _small_setup()
     rec = recommend(pois, prefs, origin=(22.518, 113.936))
     assert rec.start_minute == 14 * 60
+
+
+def test_unanimous_exclusion_removes_the_category_entirely():
+    """所有人都说「不要玩桌游」时，不该再出现在任何方案里（一个人说不要只扣分）。"""
+    pois = [
+        make_poi(id="bg", name="桌游吧", category="玩乐", tags=("桌游",), lat=22.518),
+        make_poi(id="movie", name="电影院", category="影院", lat=22.519),
+        make_poi(id="food", name="饭馆", category="餐饮", lat=22.520),
+        make_poi(id="cafe", name="咖啡", category="咖啡", lat=22.521),
+        make_poi(id="park", name="公园", category="公园", lat=22.522),
+        make_poi(id="show", name="美术馆", category="展览", lat=22.523),
+    ]
+    prefs = [
+        Preference(member_id="a", exclude_categories=("桌游",)),
+        Preference(member_id="b", exclude_categories=("桌游",)),
+    ]
+    result = recommend(pois=pois, prefs=prefs, origin=(22.518, 113.936), window_minutes=360)
+    ids = {item.id for plan in result.plans for item in plan.items}
+    assert "bg" not in ids
+    assert any("全员都不想去的" in n for n in result.notes)
+
+
+def test_one_person_excluding_does_not_remove_for_everyone():
+    """只有一个人说不要桌游：桌游吧还能出现，只是对这个人扣分。"""
+    pois = [
+        make_poi(id="bg", name="桌游吧", category="玩乐", tags=("桌游",), lat=22.518),
+        make_poi(id="food", name="饭馆", category="餐饮", lat=22.520),
+        make_poi(id="cafe", name="咖啡", category="咖啡", lat=22.521),
+    ]
+    prefs = [
+        Preference(member_id="a", exclude_categories=("桌游",)),
+        Preference(member_id="b"),
+    ]
+    result = recommend(pois=pois, prefs=prefs, origin=(22.518, 113.936), window_minutes=240)
+    assert not any("全员都不想去的" in n for n in result.notes)

@@ -127,6 +127,9 @@ class POIRecord(Base):
     queue: Mapped[float] = mapped_column(Float, default=0)
     tags: Mapped[str] = mapped_column(String(200), default="")
     blurb: Mapped[str] = mapped_column(String(200), default="")
+    # 营业时间（24 小时制，> 24 表示跨零点）；默认全天，老库补列后就是 0/24
+    open_hour: Mapped[float] = mapped_column(Float, default=0.0)
+    close_hour: Mapped[float] = mapped_column(Float, default=24.0)
 
 
 class PlanRecord(Base):

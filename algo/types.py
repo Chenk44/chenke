@@ -42,9 +42,30 @@ class POI:
     queue: float  # 0.0 不排队 ~ 1.0 排很久
     tags: tuple[str, ...] = ()  # 自由标签，用于忌口/偏好惩罚
     blurb: str = ""  # 一句话推荐理由，直接展示给用户
+    # 营业时间（24 小时制，小数表示半点）：默认全天开放，老数据不加这两列也能跑
+    open_hour: float = 0.0
+    close_hour: float = 24.0
 
     def has_any_tag(self, tags: set[str] | frozenset[str]) -> bool:
         return bool(set(self.tags) & set(tags))
+
+    def is_open_at(self, hour: float) -> bool:
+        """这个时刻能不能进去。跨零点的夜宵摊用 close_hour > 24 表示。"""
+        h = hour % 24
+        if self.close_hour > 24.0:
+            return self.open_hour <= h < 24.0 or h < self.close_hour - 24.0
+        return self.open_hour <= h < self.close_hour
+
+    def hours_text(self) -> str:
+        """给人看的一行营业时间，没人填就返回空串。"""
+        if self.open_hour <= 0.0 and self.close_hour >= 24.0:
+            return ""
+        return f"{_hm(self.open_hour)}-{_hm(self.close_hour)}"
+
+
+def _hm(hour: float) -> str:
+    total = int(round(hour * 60)) % (24 * 60)
+    return f"{total // 60:02d}:{total % 60:02d}"
 
 
 @dataclass
@@ -111,3 +132,5 @@ class Plan:
     per_member: dict[str, float] = field(default_factory=dict)
     # 每个地点「从出发算起第几分钟到达」，用于渲染 14:00 / 15:30 这样的时间线
     offsets: list[float] = field(default_factory=list)
+    # 到达时已经打烊的地点 id（有的话排序会被扣分，解释卡也会点名）
+    closed: tuple[str, ...] = ()

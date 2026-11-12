@@ -16,6 +16,7 @@ from __future__ import annotations
 from itertools import combinations, permutations
 
 from .geo import estimate_travel_minutes
+from .travel import pair_minutes
 from .types import POI, Plan, Preference
 
 # 每个品类的典型停留时长（分钟）
@@ -41,11 +42,18 @@ UNDERFILL_PENALTY = 0.15
 # 有人设了「最多玩 N 小时」时，每超 1 小时扣多少
 CAP_OVERRUN_PER_HOUR = 0.20
 
+# 排到那儿已经打烊了：不是不能去，但得让它排后面
+CLOSED_PENALTY = 0.25
+
 MAX_ITEMS = 3
 MIN_ITEMS = 2
 
 
 def _travel(a: POI, b: POI, has_car: bool) -> float:
+    """商圈之间有真实路网数据就用它，没有才退回球面距离估算。"""
+    known = pair_minutes(a.area, b.area, has_car)
+    if known is not None:
+        return known
     return estimate_travel_minutes(a.lat, a.lng, b.lat, b.lng, has_car=has_car)
 
 
@@ -65,6 +73,7 @@ def _explain(
     per_member: dict[str, float],
     prefs: list[Preference],
     total_minutes: float,
+    closed: tuple[str, ...] = (),
 ) -> str:
     """用规则拼一句人话解释，而不是让大模型编。
 
@@ -93,6 +102,11 @@ def _explain(
     if cheap and all(p.max_price is None or cheap <= p.max_price for p in prefs):
         bits.append(f"最贵一餐人均 {cheap:.0f} 元，不超预算")
 
+    # 排到那儿已经关门了：诚实说出来，别让用户到了门口才发现
+    if closed:
+        names = "、".join(p.name for p in seq if p.id in closed)
+        bits.append(f"{names} 到达时已过营业时间，要么早点出发，要么换个点")
+
     return "；".join(bits) + "。"
 
 
@@ -107,6 +121,8 @@ def build_plans(
     top_k: int = 3,
     pool_size: int = 24,
     require_food: bool = True,
+    start_minute: int = 14 * 60,
+    origin_area: str | None = None,
 ) -> list[Plan]:
     """返回按综合分排序的 top_k 个方案。"""
     if not pois or not prefs:
@@ -146,12 +162,17 @@ def build_plans(
             if a.id != b.id:
                 pair[(a.id, b.id)] = _travel(a, b, has_car)
 
-    origin_leg = {
-        p.id: estimate_travel_minutes(origin[0], origin[1], p.lat, p.lng, has_car=has_car)
-        for p in pool
-    }
+    def _from_origin(poi: POI) -> float:
+        known = pair_minutes(origin_area or "", poi.area, has_car)
+        if known is not None:
+            return known
+        return estimate_travel_minutes(origin[0], origin[1], poi.lat, poi.lng, has_car=has_car)
 
-    candidates: list[tuple[float, tuple[POI, ...], float, dict[str, float], list[float]]] = []
+    origin_leg = {p.id: _from_origin(p) for p in pool}
+
+    candidates: list[
+        tuple[float, tuple[POI, ...], float, dict[str, float], list[float], tuple[str, ...]]
+    ] = []
 
     for size in range(MIN_ITEMS, MAX_ITEMS + 1):
         for combo in combinations(pool, size):
@@ -165,7 +186,9 @@ def build_plans(
 
             base = sum(consensus[p.id].consensus for p in combo) / len(combo)
 
-            best_for_combo: tuple[float, tuple[POI, ...], float, list[float]] | None = None
+            best_for_combo: (
+                tuple[float, tuple[POI, ...], float, list[float], tuple[str, ...]] | None
+            ) = None
             for seq in permutations(combo):
                 # 逐个地点累加：什么时候到、待多久、再花多少分钟到下一个
                 clock = origin_leg[seq[0].id]
@@ -174,6 +197,12 @@ def build_plans(
                     clock += DWELL.get(seq[i].category, 60)
                     clock += pair[(seq[i].id, seq[i + 1].id)]
                     offsets.append(clock)
+
+                closed = tuple(
+                    poi.id
+                    for i, poi in enumerate(seq)
+                    if not poi.is_open_at((start_minute + offsets[i]) / 60.0)
+                )
 
                 route = origin_leg[seq[0].id] + sum(
                     pair[(seq[i].id, seq[i + 1].id)] for i in range(len(seq) - 1)
@@ -194,15 +223,16 @@ def build_plans(
                     - dwell_penalty
                     - UNDERFILL_PENALTY * shortfall
                     - over_cap
+                    - CLOSED_PENALTY * len(closed)
                 )
                 if best_for_combo is None or score > best_for_combo[0]:
-                    best_for_combo = (score, seq, total, offsets)
+                    best_for_combo = (score, seq, total, offsets, closed)
 
             if best_for_combo is None:
                 continue
-            score, seq, total, offsets = best_for_combo
+            score, seq, total, offsets, closed = best_for_combo
             per_member = {m: sum(matrix[m][p.id] for p in seq) / len(seq) for m in matrix}
-            candidates.append((score, seq, total, per_member, offsets))
+            candidates.append((score, seq, total, per_member, offsets, closed))
 
     if not candidates:
         # 池子里真的一个吃的都没有（数据太少）时，退一步：先给出能走的动线
@@ -229,7 +259,9 @@ def build_plans(
         ids = {p.id for p in seq}
         return max((len(ids & c) / len(ids | c) for c in chosen), default=0.0)
 
-    selected: list[tuple[float, tuple[POI, ...], float, dict[str, float], list[float]]] = []
+    selected: list[
+        tuple[float, tuple[POI, ...], float, dict[str, float], list[float], tuple[str, ...]]
+    ] = []
     chosen_sets: list[set[str]] = []
 
     for threshold in (0.2, 0.34, 1.01):
@@ -245,7 +277,7 @@ def build_plans(
             break
 
     plans: list[Plan] = []
-    for score, seq, total, per_member, offsets in selected[:top_k]:
+    for score, seq, total, per_member, offsets, closed in selected[:top_k]:
         worst_member = min(per_member, key=lambda k: per_member[k])
         plans.append(
             Plan(
@@ -255,9 +287,10 @@ def build_plans(
                 worst_score=per_member[worst_member],
                 worst_member=worst_member,
                 total_minutes=total,
-                explanation=_explain(seq, per_member, prefs, total),
+                explanation=_explain(seq, per_member, prefs, total, closed),
                 per_member=per_member,
                 offsets=offsets,
+                closed=closed,
             )
         )
     return plans

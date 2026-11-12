@@ -14,8 +14,9 @@ from datetime import date
 from .aggregate import Consensus, aggregate, rank_agreement
 from .combine import build_plans
 from .geo import estimate_travel_minutes
+from .travel import pair_minutes
 from .types import POI, Plan, Preference
-from .utility import score_poi
+from .utility import excludes_poi, score_poi
 
 RAINY = {"rain", "storm", "thunder", "雨", "暴雨", "台风"}
 HOT = {"hot", "高温"}
@@ -49,6 +50,8 @@ class Recommendation:
                             "avg_price": p.avg_price,
                             "blurb": p.blurb,
                             "indoor": p.indoor,
+                            "hours": p.hours_text(),
+                            "closed": p.id in plan.closed,
                             "offset_minutes": round(
                                 plan.offsets[i] if i < len(plan.offsets) else 0.0, 1
                             ),
@@ -112,6 +115,7 @@ def recommend(
     window_minutes: float = 360.0,
     top_k: int = 3,
     meet_date: date | None = None,
+    origin_area: str | None = None,
 ) -> Recommendation:
     """主入口。origin 是出发点坐标（一般是集合地点）。"""
     if not pois:
@@ -122,14 +126,32 @@ def recommend(
     notes = apply_weather(prefs, weather)
     size = group_size or len(prefs)
 
+    # 全员都说「不要」的品类，直接从候选里删掉。
+    # 一个人说不要只是给他自己扣分（别人可能还想去），但所有人都说了就没什么好商量的。
+    unanimous: set[str] = set(prefs[0].exclude_categories)
+    for pref in prefs[1:]:
+        unanimous &= set(pref.exclude_categories)
+    if unanimous:
+        words = tuple(sorted(unanimous))
+        kept = [p for p in pois if not excludes_poi(p, words)]
+        # 删太狠就退回「只扣分」：至少要留下 4 个、且不少于原有的一半，否则出不了方案
+        if len(kept) >= max(4, len(pois) // 2):
+            removed = len(pois) - len(kept)
+            pois = kept
+            notes.append(
+                f"🚫 全员都不想去的「{'、'.join(words)}」，已从候选里去掉 {removed} 个地点"
+            )
+
     # 1) 单人 × 单地点 打分矩阵
     matrix: dict[str, dict[str, float]] = {}
     for pref in prefs:
         row: dict[str, float] = {}
         for poi in pois:
-            minutes = estimate_travel_minutes(
-                origin[0], origin[1], poi.lat, poi.lng, has_car=pref.has_car
-            )
+            minutes = pair_minutes(origin_area or "", poi.area, pref.has_car)
+            if minutes is None:
+                minutes = estimate_travel_minutes(
+                    origin[0], origin[1], poi.lat, poi.lng, has_car=pref.has_car
+                )
             row[poi.id] = score_poi(poi, pref, minutes, group_size=size).score
         matrix[pref.member_id] = row
 
@@ -137,6 +159,11 @@ def recommend(
     ranked = aggregate(matrix)
     consensus = {c.poi_id: c for c in ranked}
     agreement = rank_agreement(matrix)
+
+    # 出发时间取全组最晚的那个：有人说「我七点才下班」，总不能让其他人六点就走。
+    # 它必须排在组合搜索之前——出发越晚，越容易排到打烊的点。
+    start_hour = max((p.start_hour for p in prefs if p.start_hour), default=DEFAULT_START_HOUR)
+    start_minute = int(start_hour) * 60
 
     # 3) 组合搜索
     plans = build_plans(
@@ -148,6 +175,8 @@ def recommend(
         group_size=size,
         window_minutes=window_minutes,
         top_k=top_k,
+        start_minute=start_minute,
+        origin_area=origin_area,
     )
 
     if len(plans) == 0:
@@ -158,13 +187,10 @@ def recommend(
     if agreement < 0.6:
         notes.append("ℹ️ 两种聚合规则排序差异较大，说明这组偏好分歧明显，建议投票定案")
 
-    # 出发时间取全组最晚的那个：有人说「我七点才下班」，总不能让其他人六点就走
-    start_hour = max((p.start_hour for p in prefs if p.start_hour), default=DEFAULT_START_HOUR)
-
     return Recommendation(
         plans=plans,
         top_pois=ranked,
         agreement=agreement,
-        start_minute=int(start_hour) * 60,
+        start_minute=start_minute,
         notes=notes,
     )

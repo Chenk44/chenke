@@ -169,10 +169,13 @@ POST /api/groups/8BV6K7/recommend
       "id": 13,
       "items": [
         {"id": "xibei", "name": "西贝莜面村(海岸城)", "area": "海岸城", "category": "餐饮",
+         "indoor": true, "hours": "11:00-22:00", "closed": false,
          "avg_price": 95.0, "blurb": "带长辈和小孩都安全的选择", "offset_minutes": 2.0},
         {"id": "boardgame", "name": "桌游吧(海岸城)", "area": "海岸城", "category": "玩乐",
+         "indoor": true, "hours": "10:00-22:00", "closed": false,
          "avg_price": 60.0, "blurb": "下雨天最稳的备选", "offset_minutes": 94.0},
         {"id": "cgv-coastcity", "name": "CGV影城(海岸城)", "area": "海岸城", "category": "影院",
+         "indoor": true, "hours": "10:00-23:00", "closed": false,
          "avg_price": 60.0, "blurb": "IMAX 厅够大 座椅也舒服", "offset_minutes": 186.0}
       ],
       "start_minute": 840,
@@ -203,6 +206,7 @@ POST /api/groups/8BV6K7/recommend
 | `per_member` | 每个人对这套方案的满意度 | 有争议时拿去群里对质，比"我觉得挺好"有说服力 |
 | `total_minutes` | 含路程的总耗时 | 超过 `window_minutes` 会扣分，不是硬砍 |
 | `offset_minutes` | 从出发算起第几分钟到这个点 | 前端据此渲染 `14:02 · 16:04` 的时间线 |
+| `hours` / `closed` | 这个点的营业区间，以及「按这个时间线到的时候是否已打烊」 | 排到 22:43 的书店不是好方案，前端把打烊的点标红 |
 | `start_minute` | 全组定下的出发时刻（分钟数，840 = 14:00） | 有人「七点才下班」时，时间线要整体后移，而不是写死 14:00 |
 | `top_pois` | 单个地点的排名（不是组合） | 用来回答"如果只去一个地方，去哪" |
 | `agreement` | Borda 与共识分两种排序的一致度 | 两种规则结论一致才敢说"这个结果稳" |
@@ -245,6 +249,7 @@ GET /api/pois?area=海岸城&indoor=true
 ```json
 [{"id": "xibei", "name": "西贝莜面村(海岸城)", "area": "海岸城", "district": "南山区",
   "category": "餐饮", "avg_price": 95.0, "rating": 4.5, "indoor": true,
+  "open_hour": 11.0, "close_hour": 22.0,
   "kid_friendly": true, "tags": ["西北菜", "面食"], "blurb": "带长辈和小孩都安全的选择"}]
 ```
 

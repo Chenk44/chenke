@@ -78,6 +78,7 @@ def load_pois(path: str | Path | None = None) -> list[POI]:
         missing = set(REQUIRED_COLUMNS) - set(reader.fieldnames or ())
         if missing:
             raise POIDataError(f"缺少列：{sorted(missing)}")
+        has_hours = {"open_hour", "close_hour"} <= set(reader.fieldnames or ())
 
         for lineno, row in enumerate(reader, start=2):
             where = f"{csv_path.name}:{lineno}"
@@ -113,6 +114,20 @@ def load_pois(path: str | Path | None = None) -> list[POI]:
 
             tags = tuple(t.strip() for t in (row["tags"] or "").split("|") if t.strip())
 
+            open_hour, close_hour = 0.0, 24.0
+            if has_hours:
+                raw_open = (row.get("open_hour") or "").strip()
+                raw_close = (row.get("close_hour") or "").strip()
+                open_hour = _float(raw_open, where) if raw_open else 0.0
+                close_hour = _float(raw_close, where) if raw_close else 24.0
+                # 允许 close_hour 到 26 表示「凌晨两点打烊」，但不允许更离谱的值
+                if not 0.0 <= open_hour < 24.0:
+                    raise POIDataError(f"{where}: open_hour 越界 {open_hour}")
+                if not open_hour < close_hour <= 26.0:
+                    raise POIDataError(
+                        f"{where}: close_hour 必须大于 open_hour 且不超过 26，实际 {close_hour}"
+                    )
+
             pois.append(
                 POI(
                     id=pid,
@@ -133,6 +148,8 @@ def load_pois(path: str | Path | None = None) -> list[POI]:
                     queue=queue,
                     tags=tags,
                     blurb=(row["blurb"] or "").strip(),
+                    open_hour=open_hour,
+                    close_hour=close_hour,
                 )
             )
 

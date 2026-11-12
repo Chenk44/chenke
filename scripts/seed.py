@@ -68,6 +68,8 @@ def seed(reset: bool = False) -> int:
             rec.queue = poi.queue
             rec.tags = "|".join(poi.tags)
             rec.blurb = poi.blurb
+            rec.open_hour = poi.open_hour
+            rec.close_hour = poi.close_hour
 
         db.commit()
 
