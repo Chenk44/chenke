@@ -283,9 +283,14 @@ docker run -p 8000:8000 chenke
 powershell -ExecutionPolicy Bypass -File .\share.ps1
 ```
 
-它会做三件事：服务没起来先起一个、第一次运行时把 `cloudflared.exe` 下到 `.tmp\`、
-然后开一条 Cloudflare 免费隧道并把地址打印出来（形如 `https://xxx.trycloudflare.com`）。
-不用注册账号，两分钟内就能把链接丢进群里。
+它会先确认服务活着，再用系统自带的 `ssh` 通过 localhost.run 开一条隧道
+（走 443 端口，不下载任何东西），把 `https://xxx.lhr.life` 这样的地址打印出来。
+如果这个网络环境能出 7844 端口，加 `-Cloudflare` 可以换用 Cloudflare 隧道，
+速度更快、域名更稳：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\share.ps1 -Cloudflare
+```
 
 三条要知道的：
 

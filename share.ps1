@@ -1,30 +1,28 @@
 ﻿<#
 把本机正在跑的服务临时开到公网，让不在同一个 WiFi 的朋友也能填偏好。
 
-用法（在仓库根目录）：
-    powershell -ExecutionPolicy Bypass -File .\share.ps1
+    powershell -ExecutionPolicy Bypass -File .\share.ps1              # 默认：SSH 隧道（走 443）
+    powershell -ExecutionPolicy Bypass -File .\share.ps1 -Cloudflare  # 备选：Cloudflare 隧道
 
-它会做三件事：
-    1. 服务没起来就先起（后台窗口，最小化）
-    2. 第一次运行时自动下载 cloudflared.exe 到 .tmp\（约 55 MB）
-    3. 开一条 Cloudflare 临时隧道，把公网地址打印出来
+两种方式怎么选：
+    * SSH（默认，localhost.run）：只用系统的 ssh 客户端，不下载任何东西，
+      走的是 443 端口——校园网、手机热点、公司网络基本都放行。缺点是免费域名
+      过一段时间会轮换，长时间挂机可能中途换地址。
+    * Cloudflare：速度更快、域名更稳定，但要能出 TCP/UDP 7844。
+      如果日志里刷 "DialContext error: i/o timeout" 或 "no recent network activity"，
+      就是这个端口被网络挡住了，换回默认的 SSH 方式。
 
-注意：
-    * 地址每次启动都不一样（形如 https://xxx-yyy-zzz.trycloudflare.com）
-    * 关掉这个窗口，链接立刻失效；你的电脑关机也一样
-    * 这是给「今晚就要收偏好」用的，不是给评委长期访问用的——
-      长期请按 README 第八节部署到云服务器
+共同点：地址每次启动都不一样，关掉窗口就断；本机服务必须一直开着。
 #>
 
 param(
     [int]$Port = 8000,
+    [switch]$Cloudflare,
     [switch]$SkipServer
 )
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
-$exe = Join-Path $root '.tmp\cloudflared.exe'
-$url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
 
 function Test-Health {
     param([int]$p)
@@ -54,25 +52,31 @@ if (-not $SkipServer -and -not (Test-Health -p $Port)) {
     Write-Host "服务已就绪。" -ForegroundColor Green
 }
 
-if (-not (Test-Path $exe)) {
-    Write-Host "第一次运行，下载 cloudflared（约 55 MB）…" -ForegroundColor Cyan
-    $old = $ProgressPreference
-    $ProgressPreference = 'SilentlyContinue'
-    try {
-        Invoke-WebRequest -Uri $url -OutFile $exe -TimeoutSec 300
-    } catch {
+Write-Host ""
+
+if ($Cloudflare) {
+    $exe = Join-Path $root '.tmp\cloudflared.exe'
+    $url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
+    if (-not (Test-Path $exe)) {
+        Write-Host "第一次用 Cloudflare 模式，下载 cloudflared（约 55 MB）…" -ForegroundColor Cyan
+        $old = $ProgressPreference
+        $ProgressPreference = 'SilentlyContinue'
+        try {
+            Invoke-WebRequest -Uri $url -OutFile $exe -TimeoutSec 300
+        } catch {
+            $ProgressPreference = $old
+            throw "下载失败（$($_.Exception.Message)）。可以手动下载后放到 .tmp\cloudflared.exe：`n  $url"
+        }
         $ProgressPreference = $old
-        throw "下载失败（$($_.Exception.Message)）。可以手动下载后放到 .tmp\cloudflared.exe：`n  $url"
+        Write-Host "下载完成。" -ForegroundColor Green
     }
-    $ProgressPreference = $old
-    Write-Host "下载完成。" -ForegroundColor Green
+    Write-Host "正在开 Cloudflare 隧道，稍等十秒左右…" -ForegroundColor Cyan
+    & $exe tunnel --url "http://127.0.0.1:$Port" --no-autoupdate
+} else {
+    Write-Host "正在开 SSH 隧道（localhost.run），稍等五秒左右…" -ForegroundColor Cyan
+    Write-Host "地址会以 https://xxxx.lhr.life 的形式出现在下面。" -ForegroundColor DarkGray
+    Write-Host ""
+    $ssh = 'C:\Windows\System32\OpenSSH\ssh.exe'
+    if (-not (Test-Path $ssh)) { $ssh = 'ssh' }
+    & $ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=20 -R "80:127.0.0.1:$Port" nokey@localhost.run
 }
-
-Write-Host ""
-Write-Host "正在开隧道，稍等十秒左右，下面这个地址就是发给朋友的链接：" -ForegroundColor Cyan
-Write-Host "（地址是 https://xxxx.trycloudflare.com 这种，Ctrl+C 或关窗口就断）" -ForegroundColor DarkGray
-Write-Host ""
-
-# 用 http2 而不是默认的 quic：笔记本休眠或切换网络之后，quic 的 UDP 连接经常半死，
-# 表现为日志里一直 "Retrying connection"、外网打不开但本机好好的；http2 走 TCP，重连快得多。
-& $exe tunnel --url "http://127.0.0.1:$Port" --no-autoupdate --protocol http2
