@@ -3,7 +3,7 @@
 <p>
   <a href="https://github.com/Chenk44/chenke/actions/workflows/ci.yml"><img src="https://github.com/Chenk44/chenke/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-3776ab" alt="python 3.10+">
-  <img src="https://img.shields.io/badge/tests-116%20passed-4dd4ac" alt="116 tests passed">
+  <img src="https://img.shields.io/badge/tests-125%20passed-4dd4ac" alt="125 tests passed">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license">
   <img src="https://img.shields.io/badge/data-202%20POIs%20%C2%B7%2020%20areas-orange" alt="202 POIs">
 </p>
@@ -54,7 +54,7 @@
 
 ## 二、30 秒看懂它怎么用
 
-1. **建局**：起个名、选出发商圈、选天气（下雨 / 高温）、填人均预算 → 拿到 6 位邀请码。
+1. **建局**：起个名、选出发商圈、**选日期**（系统自己去查那天的天气，下雨就自动优先室内）、填人均预算 → 拿到 6 位邀请码。
 2. **各填各的**：三个滑杆（安静↔热闹 / 省钱↔舍得 / 近↔远）+ 硬条件（想待室内 / 想出去走走、带娃、开车、忌口）
    + 一句话（"想吃火锅，晚上七点出发，最多三小时"——系统把它拆成 16 个结构化约束，
    连"想吃火锅"这种正向愿望和"不要玩桌游"这种排除都会进排序）。
@@ -135,7 +135,7 @@ Windows 用户也可以直接双击/运行仓库根目录的 `run.ps1`，它会�
 python -m pytest -q
 ```
 
-116 个测试，覆盖效用函数、聚合规则、组合搜索、一句话解析、营业时间与通行时间表，以及全部 API 端点。
+125 个测试，覆盖效用函数、聚合规则、组合搜索、一句话解析、营业时间、通行时间表、天气回填，以及全部 API 端点。
 每个测试都对应文档里的一句话，改坏了 CI 会红。
 
 ## 五、项目结构
@@ -154,21 +154,23 @@ python -m pytest -q
 │   ├── combine.py               296     组合与动线搜索、打烊降权、多样性去重、人话解释
 │   ├── pipeline.py              196     把上面几步编排成一次 run()
 │   └── loader.py                178     读 CSV 并逐列校验（脏数据启动即报错）
-├── backend/app/               1 724 行  Web 层，只做三件事：校验、读写库、转格式
+├── backend/app/               2 068 行  Web 层，只做三件事：校验、读写库、转格式
 │   ├── main.py                  116     FastAPI 入口、CORS、静态挂载、422 文案、/api/netinfo
 │   ├── config.py                 39     pydantic-settings 读 .env
 │   ├── db.py                    122     引擎、建表、老库补列与布尔列迁移
-│   ├── models.py                177     7 张表：局/成员/偏好/地点/方案/投票/评价
-│   ├── schemas.py               207     请求响应模型（OpenAPI 文档就是它生成的）
-│   ├── routers/groups.py        330     建局、加入、填偏好、一句话解析、示例局
+│   ├── models.py                179     7 张表：局/成员/偏好/地点/方案/投票/评价
+│   ├── schemas.py               223     请求响应模型（OpenAPI 文档就是它生成的）
+│   ├── routers/groups.py        351     建局（按日期回填天气）、加入、填偏好、示例局
 │   ├── routers/plans.py         149     生成方案、拉方案、投票、计票
 │   ├── routers/pois.py           83     地点列表、商圈列表、地点评价
+│   ├── routers/weather.py        51     按日期查天气（7 天内）
 │   ├── services/nlp.py          389     一句话 → 结构化约束（规则版，3 毫秒，可测）
+│   ├── services/weather.py      246     高德 + Open-Meteo 两级预报，翻成四种天气
 │   └── services/recommender.py  112     ORM ↔ algo 的唯一翻译层
 ├── data/pois_shenzhen.csv      35 KB     202 个深圳地点 × 20 列（本项目最核心的资产）
 ├── data/area_travel.csv        11 KB     20 个商圈两两的驾车/公交分钟数（高德路网预计算）
-├── web/index.html               741 行  单页前端，零构建、零依赖、不需要 npm
-├── tests/                     1 171 行  116 个用例：算法、聚合、组合、接口、解析、营业时间、通行时间
+├── web/index.html               806 行  单页前端，零构建、零依赖、不需要 npm
+├── tests/                     1 291 行  125 个用例：算法、聚合、组合、接口、解析、营业时间、通行时间、天气
 │   ├── conftest.py               39     先设 DATABASE_URL 再 import app（顺序很关键）
 │   ├── test_algo.py             459     效用、聚合、组合、时间线、加载器校验、全员排除
 │   ├── test_api.py              316     全部接口的端到端行为
@@ -185,14 +187,14 @@ python -m pytest -q
 │   ├── open_hours.py            103     营业时间：解析高德时间串、按品类兜底
 │   ├── backfill_hours.py        101     把营业时间回填进 CSV（149 条来自高德）
 │   ├── fetch_travel.py          154     商圈两两通行时间预计算（380 次请求落成一张表）
-│   ├── audit_pois.py            116     数据体检：把可疑标注挑出来，人只复核这几行
+│   ├── audit_pois.py           116     数据体检：把可疑标注挑出来，人只复核这几行
 │   └── layout_probe.py          102     移动端布局体检（CDP 量宽度、找越界元素）
 ├── docs/
 │   ├── ALGORITHM.md             389     算法说明书：从痛点推到公式
 │   ├── API.md                   292     17 个接口 + 真实响应样例
 │   ├── DATA.md                  117     数据来源、标注口径、合规说明
 │   └── preview-*.png                    README 用的两张真实截图
-├── .github/workflows/ci.yml      35     push 即跑：ruff → 灌数据 → 116 测试 → 真起服务 curl
+├── .github/workflows/ci.yml      35     push 即跑：ruff → 灌数据 → 125 测试 → 真起服务 curl
 ├── run.ps1 / run.sh                     一键启动（Windows / macOS+Linux）
 ├── Dockerfile                    22     多阶段构建 + 非 root 用户
 └── requirements.txt / pyproject.toml    依赖 7 个；pytest 与 ruff 配置
@@ -259,6 +261,7 @@ web/index.html          点「生成方案」
 | POST | `/api/reviews` | 玩完之后的评价 |
 | GET | `/api/pois/{id}/reviews` | 某个地点的评价 |
 | GET | `/api/health` | 健康检查（容器探针 / CI 用） |
+| GET | `/api/weather?date=YYYY-MM-DD` | 查那天的天气（7 天内；查不到会说查不到，不报错） |
 
 完整定义见 `/docs`（OpenAPI），或 [docs/API.md](docs/API.md)。
 
@@ -301,6 +304,12 @@ docker run -p 8000:8000 chenke
    `python -m scripts.audit_pois` 做交叉体检（公园标成室内、餐饮人均 0、只开 2 小时、
    同名同坐标），现在报 0 处可疑；发现错标就在 `data/pois_shenzhen.csv` 改一行、
    重跑 `python -m scripts.seed`，不用改代码。
+
+7. **天气是城市级的 7 天预报，不是「你要去的那个商圈此刻下雨」。**
+   高德给今天 + 未来 3 天（中文天气词，和 POI 数据同源），Open-Meteo 补到 7 天
+   （WMO 代码 + 降水概率，不需要 key），两级并成一张「日期 → 天气」表并缓存半小时；
+   两个源都挂了就退回手动选天气，**建局不会失败**。超出 7 天会明说「只能预知 7 天」，
+   而不是瞎猜一个。天气只修正「没表态的人」的室内外倾向，自己说了「想出去」的照样尊重。
 
 ## 十、许可
 

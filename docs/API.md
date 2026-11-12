@@ -36,6 +36,7 @@
 | POST | `/api/reviews` | 玩完之后评价一个地点 |
 | GET | `/api/pois/{id}/reviews` | 某个地点的评价 |
 | GET | `/api/health` | 健康检查（CI 和容器探针用） |
+| GET | `/api/weather?date=YYYY-MM-DD` | 查某一天的天气（只覆盖今天起 7 天） |
 
 ---
 
@@ -48,7 +49,7 @@ Content-Type: application/json
 {
   "name": "周六下午，五个人",
   "origin_area": "海岸城",
-  "weather": "rain",
+  "meet_date": "2026-11-13",
   "budget": 150,
   "window_minutes": 360
 }
@@ -60,10 +61,11 @@ Content-Type: application/json
   "code": "8BV6K7",
   "name": "周六下午，五个人",
   "city": "深圳",
-  "meet_date": null,
+  "meet_date": "2026-11-13",
   "budget": 150.0,
   "origin_area": "海岸城",
   "weather": "rain",
+  "weather_text": "中雨转暴雨 26°/21°",
   "window_minutes": 360,
   "created_at": "2026-11-10T09:58:12",
   "members": []
@@ -72,7 +74,9 @@ Content-Type: application/json
 
 - `code` 是 6 位邀请码，字母表去掉了 `0O1I`——**这个码是要被人在群里念出来的**。
 - `origin_area` 决定出发坐标（取该商圈地点的质心）；写了不认识的商圈会退回深圳中心，不阻断建局。
-- `weather` 取 `rain` / `hot` / 空。下雨会触发「优先室内」，这是深圳最高频的场景。
+- `meet_date` 给了日期，服务端**自己会去查那天的天气**（见第 8 节），把结果写进
+  `weather`（算法用）和 `weather_text`（人看的原话）；查不到就当没说，建局照样成功。
+- `weather` 也可以手填 `rain` / `hot` / `clear`，手填优先于预报。
 
 ## 2. 入局
 
@@ -274,6 +278,55 @@ POST /api/demo
 评委或第一次点进来的人不用先花三分钟编五个人的口味。
 
 浏览器里直接访问 `/#demo` 也会走这条路径。
+
+---
+
+## 8. 天气（按日期自动查）
+
+```http
+GET /api/weather?date=2026-11-13
+```
+
+```json
+{
+  "date": "2026-11-13",
+  "in_range": true,
+  "kind": "rain",
+  "text": "中雨转暴雨",
+  "high": 26.0,
+  "low": 21.0,
+  "precip": null,
+  "source": "amap",
+  "message": "",
+  "available_dates": ["2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15",
+                      "2026-11-16", "2026-11-17", "2026-11-18"]
+}
+```
+
+`kind` 只有四种，正是 `algo/pipeline.py: apply_weather` 认识的那四种：
+
+| kind | 由什么推出来 | 对方案的影响 |
+| --- | --- | --- |
+| `storm` | 台风 / 雷暴 / 雷阵雨 | 没表态的人 `indoor_pref = 1` |
+| `rain` | 白天或夜里任一处有「雨」 | 同上，提示「已自动优先室内」 |
+| `hot` | 最高温 ≥ 33℃ | 同上 |
+| `clear` | 其余 | 不修正 |
+
+超出 7 天或预报拉不到时**不报错**，而是把话说清楚：
+
+```json
+{
+  "date": "2026-12-12",
+  "in_range": false,
+  "kind": null,
+  "message": "只能预知 7 天内的天气，换个近点的日子，或者手动选天气",
+  "available_dates": ["2026-11-12", "..."]
+}
+```
+
+两个数据源：高德 `weatherInfo`（今天 + 3 天，中文天气词，和 POI 同源）先占位，
+Open-Meteo（7 天，WMO 代码，不需要 key）补剩下的日子；合并表缓存 30 分钟。
+任何一个源挂了都只是少几天数据，接口仍然 200。
 
 ---
 

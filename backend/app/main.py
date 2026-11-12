@@ -17,7 +17,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import BASE_DIR, settings
 from .db import init_db
-from .routers import groups, plans, pois
+from .routers import groups, plans, pois, weather
 
 
 @asynccontextmanager
@@ -48,6 +48,7 @@ app.add_middleware(
 app.include_router(groups.router)
 app.include_router(plans.router)
 app.include_router(pois.router)
+app.include_router(weather.router)
 
 
 @app.exception_handler(RequestValidationError)

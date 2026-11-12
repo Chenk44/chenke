@@ -45,9 +45,25 @@ class GroupOut(BaseModel):
     budget: float | None
     origin_area: str
     weather: str | None
+    weather_text: str | None = None
     window_minutes: int
     created_at: datetime
     members: list[MemberOut] = []
+
+
+class WeatherOut(BaseModel):
+    """某一天的天气：能自动查到就带具体数字，查不到就只回 in_range=false。"""
+
+    date: date
+    in_range: bool
+    kind: str | None = Field(default=None, description="storm / rain / hot / clear")
+    text: str | None = None
+    high: float | None = None
+    low: float | None = None
+    precip: int | None = None
+    source: str | None = None
+    message: str = ""
+    available_dates: list[str] = []
 
 
 # ---------- 入局 / 填偏好 ----------

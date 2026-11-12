@@ -45,6 +45,8 @@ class Group(Base):
     origin_lat: Mapped[float] = mapped_column(Float, default=22.518)
     origin_lng: Mapped[float] = mapped_column(Float, default=113.936)
     weather: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # 那天具体什么天，给用户看的原话（「中雨 26°/21°」）；weather 只存算法认的类型
+    weather_text: Mapped[str | None] = mapped_column(String(40), nullable=True)
     window_minutes: Mapped[int] = mapped_column(Integer, default=360)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 

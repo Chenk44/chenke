@@ -23,6 +23,7 @@ from ..schemas import (
     PreferenceIn,
     PreferenceOut,
 )
+from ..services import weather as weather_service
 from ..services.nlp import merge_hints, parse_constraints
 
 router = APIRouter(prefix="/api", tags=["group"])
@@ -57,10 +58,27 @@ def group_to_out(group: Group) -> GroupOut:
         budget=group.budget,
         origin_area=group.origin_area,
         weather=group.weather,
+        weather_text=group.weather_text,
         window_minutes=group.window_minutes,
         created_at=group.created_at,
         members=[MemberOut.of(m, filled=m.preference is not None) for m in group.members],
     )
+
+
+def _resolve_weather(payload: GroupCreate) -> tuple[str | None, str | None]:
+    """天气优先用手选的；没手选就按日期去查那天。
+
+    查不到（日期超出预报范围、或者断网）就当「没说」——
+    绝不因为天气查不到而建不了局。
+    """
+    if payload.weather:
+        return payload.weather, None
+    if payload.meet_date is None:
+        return None, None
+    forecast = weather_service.forecast_for(payload.meet_date)
+    if forecast is None:
+        return None, None
+    return forecast.kind, weather_service.describe(forecast)
 
 
 @router.post("/groups", response_model=GroupOut, status_code=status.HTTP_201_CREATED)
@@ -72,6 +90,8 @@ def create_group(payload: GroupCreate, db: Session = Depends(get_db)) -> GroupOu
         # 商圈不认识就用深圳中心兜底，不阻断建局
         lat, lng = 22.5431, 114.0579
 
+    weather_kind, weather_text = _resolve_weather(payload)
+
     group = Group(
         code=_new_code(db),
         name=payload.name.strip(),
@@ -80,7 +100,8 @@ def create_group(payload: GroupCreate, db: Session = Depends(get_db)) -> GroupOu
         origin_lng=lng,
         meet_date=payload.meet_date,
         budget=payload.budget,
-        weather=(payload.weather or None),
+        weather=weather_kind,
+        weather_text=weather_text,
         window_minutes=payload.window_minutes,
     )
     db.add(group)

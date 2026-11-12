@@ -51,6 +51,16 @@
     font: inherit; outline: none;
   }
   input:focus, select:focus, textarea:focus { border-color: var(--brand); }
+  input[type=date] {
+    width: 100%; background: var(--card-2); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px;
+    font: inherit; outline: none;
+  }
+  .wline { font-size: 13px; min-height: 18px; margin: -2px 0 12px; line-height: 1.5; }
+  .wline .hint { margin-left: 6px; }
+  details.adv { margin-bottom: 12px; }
+  details.adv > summary { cursor: pointer; font-size: 12.5px; color: var(--ink-dim); }
+  details.adv[open] > summary { margin-bottom: 2px; }
   .row { display: flex; gap: 10px; }
   .row > * { flex: 1; }
   button {
@@ -209,6 +219,46 @@ const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
 
 const money = (v) => (v >= 1000 ? (v / 1000).toFixed(1) + "k" : Math.round(v));
 
+// 日期选择器用本地时区的「今天」，不能用 toISOString()——那是 UTC，
+// 在 UTC+8 的晚上八点之后会算出「昨天」。
+function isoDay(offset) {
+  const d = new Date();
+  d.setDate(d.getDate() + (offset || 0));
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+const WEATHER_LABEL = {
+  rain: "雨天，方案会优先室内",
+  storm: "台风 / 雷雨，方案会优先室内",
+  hot: "高温，方案会优先有空调的地方",
+  clear: "天气不错，室内室外都行",
+};
+
+// 选完日期就去问那天的天气。查不到也不拦着建局，只是把「手动选」露出来。
+async function refreshWeather(dateInput, weatherSelect, out) {
+  const day = dateInput.value;
+  if (!day) { out.textContent = ""; return; }
+  out.textContent = "正在查那天的天气…";
+  try {
+    const w = await api("/weather?date=" + encodeURIComponent(day));
+    if (!w.kind) {
+      out.innerHTML = `<span class="hint">${esc(w.message || "这天的预报暂时查不到，可以手动选")}</span>`;
+      return;
+    }
+    const temp = w.high != null && w.low != null
+      ? ` ${Math.round(w.high)}°/${Math.round(w.low)}°` : "";
+    const rain = w.precip != null ? ` · 降水概率 ${w.precip}%` : "";
+    out.innerHTML = `<b>${esc(w.text || "")}${temp}</b>`
+      + `<span class="hint">${esc(WEATHER_LABEL[w.kind] || "")}${rain}</span>`;
+    // 只改「按预报走」的那种：用户手动选过就别覆盖他
+    if (!weatherSelect.value) weatherSelect.value = w.kind === "clear" ? "" : w.kind;
+  } catch (e) {
+    out.innerHTML = `<span class="hint">天气查不到（${esc(e.message)}），可以手动选</span>`;
+  }
+}
+
+
 // 出发时刻由后端按「全组最晚能出发的人」给出（plan.start_minute），默认下午 2 点
 const DEFAULT_START_MINUTE = 14 * 60;
 const fmtClock = (offsetMin, startMinute) => {
@@ -244,13 +294,19 @@ async function renderHome() {
       <div class="split">
         <label class="field"><span>从哪出发</span>
           <select id="g-origin">${areas.map((a) => `<option>${esc(a)}</option>`).join("")}</select></label>
-        <label class="field"><span>天气</span>
+        <label class="field"><span>哪天去</span>
+          <input id="g-date" type="date" min="${isoDay(0)}" max="${isoDay(6)}" value="${isoDay(0)}" /></label>
+      </div>
+      <div class="wline" id="g-wline"></div>
+      <details class="adv"><summary>预报不准？手动指定天气</summary>
+        <label class="field" style="margin-top:10px"><span>那天什么天</span>
           <select id="g-weather">
-            <option value="">晴天</option>
+            <option value="">按预报走</option>
             <option value="rain">下雨 / 台风</option>
             <option value="hot">高温暴晒</option>
+            <option value="clear">晴天，不用修正</option>
           </select></label>
-      </div>
+      </details>
       <div class="split">
         <label class="field"><span>人均预算（可留空）</span>
           <input id="g-budget" type="number" min="0" placeholder="120" /></label>
@@ -280,6 +336,12 @@ async function renderHome() {
   const resume = document.getElementById("btn-resume");
   if (resume) resume.onclick = () => { location.hash = "#g/" + lastCode; };
 
+  const dateInput = document.getElementById("g-date");
+  const weatherSelect = document.getElementById("g-weather");
+  const wline = document.getElementById("g-wline");
+  dateInput.onchange = () => refreshWeather(dateInput, weatherSelect, wline);
+  refreshWeather(dateInput, weatherSelect, wline);
+
   document.getElementById("btn-create").onclick = async () => {
     const btn = document.getElementById("btn-create");
     const err = document.getElementById("home-err");
@@ -292,7 +354,8 @@ async function renderHome() {
         body: JSON.stringify({
           name: document.getElementById("g-name").value.trim() || "周六去哪",
           origin_area: document.getElementById("g-origin").value,
-          weather: document.getElementById("g-weather").value || null,
+          meet_date: dateInput.value || null,
+          weather: weatherSelect.value || null,
           budget: budgetRaw ? Number(budgetRaw) : null,
           window_minutes: Number(document.getElementById("g-window").value),
         }),
@@ -615,7 +678,9 @@ async function renderGroupView() {
       <div class="muted" style="margin-bottom:10px">
         出发地 ${esc(group.origin_area)} · 玩 ${(group.window_minutes / 60).toFixed(1)} 小时
         ${group.budget ? " · 人均 ≤ ¥" + group.budget : ""}
-        ${group.weather ? " · " + ({ rain: "下雨", hot: "高温" }[group.weather] || "") : ""}
+        ${group.meet_date ? " · " + esc(group.meet_date.slice(5).replace("-", "/")) : ""}
+        ${group.weather_text ? " · " + esc(group.weather_text)
+    : (group.weather ? " · " + ({ rain: "下雨", storm: "台风", hot: "高温", clear: "晴天" }[group.weather] || "") : "")}
       </div>
       <div class="members">${group.members.map((m) =>
         `<span class="m ${m.filled ? "" : "low"}">${esc(m.nickname)}${m.filled ? "" : " · 没填"}</span>`).join("")}</div>

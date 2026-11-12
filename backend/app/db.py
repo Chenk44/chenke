@@ -61,6 +61,8 @@ _ADDED_COLUMNS: tuple[tuple[str, str, str], ...] = (
     # 营业时间：老库补成 0/24（等于全天），等下次 seed 再填真值
     ("pois", "open_hour", "FLOAT DEFAULT 0"),
     ("pois", "close_hour", "FLOAT DEFAULT 24"),
+    # 天气原话（「中雨 26°/21°」）：老库没有就空着，前端只是不显示这行小字
+    ("groups", "weather_text", "VARCHAR(40)"),
 )
 
 
