@@ -168,6 +168,8 @@ python -m pytest -q
 │   ├── services/weather.py      246     高德 + Open-Meteo 两级预报，翻成四种天气
 │   └── services/recommender.py  112     ORM ↔ algo 的唯一翻译层
 ├── data/pois_shenzhen.csv      35 KB     202 个深圳地点 × 20 列（本项目最核心的资产）
+├── data/pois_draft.csv         27 KB     脚本先猜的草稿标注（157 条，人工复核的底稿）
+├── data/amap_shortlist.csv    141 KB     高德候选去重后的短名单（647 条，draft_labels 的输入）
 ├── data/area_travel.csv        11 KB     20 个商圈两两的驾车/公交分钟数（高德路网预计算）
 ├── web/index.html               806 行  单页前端，零构建、零依赖、不需要 npm
 ├── tests/                     1 291 行  125 个用例：算法、聚合、组合、接口、解析、营业时间、通行时间、天气

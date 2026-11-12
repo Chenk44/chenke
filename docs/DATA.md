@@ -23,10 +23,11 @@
 **这 202 条是怎么来的**（三步，都可以复现）：
 
 1. `scripts/fetch_amap.py` 用高德 `place/text` 按 14 个关键词 × 20 个商圈拉回 1 685 条候选，
-   再 `scripts/shortlist.py` 品牌去重、每商圈每品类限额，得到 647 条短名单。
+   再 `scripts/shortlist.py` 品牌去重、每商圈每品类限额，得到 647 条短名单
+   （落在 `data/amap_shortlist.csv`，跟着仓库走，不用重新消耗配额）。
 2. `scripts/draft_labels.py` 按规则给短名单里每条记录先猜一版 9 个高德拿不到的字段
-   （草稿），人工复核后再 `scripts/merge_pois.py` 与最早那 49 条人工数据合并——
-   同名且 800 米内视为同一个地点，**人工数据优先**。
+   （草稿写在 `data/pois_draft.csv`，157 条），人工复核后再 `scripts/merge_pois.py`
+   与最早那 49 条人工数据合并——同名且 800 米内视为同一个地点，**人工数据优先**。
 3. `scripts/backfill_hours.py` 从短名单的高德 `open_time` 回填营业时间（149 条命中），
    认不出时间串的按品类兜底（公园全天、美术馆 10-22、夜宵摊到凌晨 2 点）。
 
