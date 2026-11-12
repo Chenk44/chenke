@@ -32,3 +32,6 @@ tests/_bad_category.csv
 dist/
 build/
 *.zip
+
+# 高德原始候选（可由 .tmp/amap_cache 重跑生成）
+data/amap_candidates.csv
