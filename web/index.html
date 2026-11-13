@@ -28,7 +28,7 @@
     font: 13.5px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
-  .shell { max-width: 1600px; margin: 0 auto; padding: 0 40px 40px; }
+  .shell { max-width: none; margin: 0 auto; padding: 0 clamp(18px, 2.4vw, 56px) 40px; }
   .mono { font-family: "Cascadia Mono", ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; }
 
   /* ── 顶栏 ─────────────────────────────────────── */
@@ -105,7 +105,8 @@
   .group-hero h1 { font-size: 40px; line-height: 1.04; font-weight: 900; letter-spacing: -.035em; margin: 0; }
   .group-hero .code { font-family: "Cascadia Mono", ui-monospace, Consolas, monospace; font-size: 11px;
     font-weight: 700; letter-spacing: .12em; color: var(--muted); margin-top: 10px; }
-  .tiles { display: grid; grid-template-columns: repeat(4, minmax(96px, auto)); gap: 10px; }
+  .tiles { display: grid; grid-template-columns: repeat(2, minmax(128px, 1fr)); gap: 10px; }
+  .members-line { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 2px; }
   .tile { border: var(--bw) solid var(--ink); background: var(--card); padding: 9px 12px; box-shadow: 3px 3px 0 var(--ink); }
   .tile .k { font-family: "Cascadia Mono", ui-monospace, Consolas, monospace; font-size: 9px; font-weight: 700;
     text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
@@ -151,8 +152,9 @@
   .plan .sub { display: flex; align-items: center; gap: 8px; padding: 10px 0 2px; font-size: 11px; font-weight: 700; }
   .plan .sub .len { font-family: "Cascadia Mono", ui-monospace, Consolas, monospace; font-size: 10.5px; color: var(--muted); }
   .plan .sub .score { margin-left: auto; font-family: "Cascadia Mono", ui-monospace, Consolas, monospace;
-    font-size: 24px; font-weight: 900; letter-spacing: -.03em; white-space: nowrap; line-height: 1; }
-  .plan .sub .score i { font-style: normal; font-size: 12px; font-weight: 800; letter-spacing: 0; margin-left: 1px; }
+    font-size: 24px; font-weight: 900; letter-spacing: -.03em; white-space: nowrap; line-height: 1;
+    flex: none; padding-right: 2px; }
+  .plan .sub .score i { font-style: normal; font-size: 14px; font-weight: 800; letter-spacing: .02em; margin-left: 3px; vertical-align: 2px; }
 
   .timeline { list-style: none; margin: 6px 0 0; padding: 0; }
   .timeline li { display: grid; grid-template-columns: 48px 1fr auto; gap: 0 10px; align-items: baseline;
@@ -174,10 +176,10 @@
   .m.low { background: var(--pink); }
   .vote-row { display: flex; flex-direction: column; gap: 6px; }
   .vote-row button { width: 100%; display: flex; align-items: center; justify-content: space-between;
-    background: var(--ink); color: var(--card); font-size: 12.5px; font-weight: 900; letter-spacing: .08em;
-    padding: 9px 12px; box-shadow: 3px 3px 0 rgba(13,13,13,.35); }
-  .vote-row button:hover:not(:disabled) { background: var(--yellow); color: var(--ink); }
-  .vote-row button.mine { background: var(--yellow); color: var(--ink); }
+    background: var(--yellow); color: var(--ink); font-size: 12.5px; font-weight: 900; letter-spacing: .08em;
+    padding: 10px 14px; box-shadow: 3px 3px 0 var(--ink); }
+  .vote-row button:hover:not(:disabled) { background: #ffe27a; }
+  .vote-row button.mine { background: var(--card); letter-spacing: .04em; }
   .vote-row .count { font-family: "Cascadia Mono", ui-monospace, Consolas, monospace; font-size: 10.5px; font-weight: 700; color: var(--muted); }
 
   /* ── 偏好表单 ─────────────────────────────────── */
@@ -923,11 +925,19 @@ async function renderGroupView() {
   const notesHtml = ((result && result.notes) || [])
     .map((n) => `<div class="notes">${esc(n)}</div>`).join("");
 
+  const CN = ["零", "一", "两", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"];
+  const cn = (n) => CN[n] || String(n);
+  const weatherWord = { rain: "下雨", storm: "台风", hot: "高温", clear: "晴天" }[group.weather] || "天气还没定";
+  const hours = Math.round(group.window_minutes / 60);
+  const headline = plans.length
+    ? `${cn(group.members.length)}个人，${cn(hours)}个小时，${weatherWord}。<br>不是 ${cn(plans.length)} 个地点，是 ${cn(plans.length)} 段路。`
+    : `${cn(group.members.length)}个人，${cn(hours)}个小时，${weatherWord}。<br>还没有方案，点「生成方案」看看。`;
+
   $app.innerHTML = `
     <div class="group-hero">
       <div>
-        <h1>${esc(group.name)}</h1>
-        <div class="code">邀请码 ${esc(group.code)} · ${filled}/${group.members.length} 人已填偏好</div>
+        <h1>${headline}</h1>
+        <div class="code">${esc(group.name)} · 邀请码 ${esc(group.code)} · ${filled}/${group.members.length} 人已填</div>
       </div>
       <div class="tiles">
         <div class="tile"><div class="k">出发</div><div class="v">${esc(group.origin_area)}</div></div>
@@ -937,11 +947,8 @@ async function renderGroupView() {
       </div>
     </div>
 
-    <div class="ticker">
-      <span>成员 <b>${memberLine}</b></span>
-      <span class="mid">已填 <b>${filled}/${group.members.length}</b></span>
-      <span>${group.budget ? "人均 ≤ <b>¥" + group.budget + "</b>" : "预算 不限"}</span>
-    </div>
+    <div class="members-line">${group.members.map((m) =>
+      `<span class="m${m.filled ? "" : " low"}">${esc(m.nickname)}${m.filled ? " ✓" : " · 没填"}</span>`).join("")}</div>
 
     <div class="acts-row">
       <button class="primary" id="btn-generate">${filled ? "生成方案" : (state.memberId ? "去填偏好" : "加入并填偏好")}</button>
