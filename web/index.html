@@ -155,6 +155,10 @@
     font-size: 24px; font-weight: 900; letter-spacing: -.03em; white-space: nowrap; line-height: 1;
     flex: none; padding-right: 2px; }
   .plan .sub .score i { font-style: normal; font-size: 14px; font-weight: 800; letter-spacing: .02em; margin-left: 3px; vertical-align: 2px; }
+  .plan .sub .cost { border: 2px solid var(--ink); padding: 2px 6px; font-size: 10.5px; letter-spacing: .02em;
+    font-family: "Cascadia Mono", ui-monospace, Consolas, monospace; }
+  /* 超预算必须一眼看见：这是真会让人当场改主意的一条 */
+  .plan .sub .cost.over { background: var(--pink); }
 
   .timeline { list-style: none; margin: 6px 0 0; padding: 0; }
   .timeline li { display: grid; grid-template-columns: 48px 1fr auto; gap: 0 10px; align-items: baseline;
@@ -427,6 +431,21 @@ function planIndoor(plan) {
 }
 
 /* ---------------- 首屏：建局 / 入局 ---------------- */
+
+// 这一天的花费 vs 预算。预算按「一整天」算——三站各 98/60/60 每站都没超 150，
+// 合计 218 已经超了 45%，这种话必须写在卡片上，不能只写在解释里。
+function costChip(plan) {
+  const cost = Number(plan.day_cost || 0);
+  const budget = plan.day_budget == null ? null : Number(plan.day_budget);
+  if (!cost && !budget) return "";
+  const money = (v) => "¥" + Math.round(v);
+  if (budget == null) {
+    return `<span class="cost" title="这一天人均合计">合计 ${money(cost)}</span>`;
+  }
+  const over = cost > budget;
+  const label = `合计 ${money(cost)} / 预算 ${money(budget)}`;
+  return `<span class="cost ${over ? "over" : ""}" title="${over ? "超预算" : "在预算内"}">${label}</span>`;
+}
 
 function setChrome(crumbs, actionsHtml, footRight) {
   document.querySelector(".crumbs").textContent = crumbs;
@@ -891,6 +910,7 @@ async function renderGroupView() {
         <div class="sub">
           <span class="badge">${planIndoor(plan)}</span>
           <span class="len">${dur ? "全程 " + dur : ""}</span>
+          ${costChip(plan)}
           <span class="score">${(plan.consensus * 100).toFixed(1)}<i>%</i></span>
         </div>
         <ul class="timeline">${items}</ul>

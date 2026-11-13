@@ -367,6 +367,40 @@ def test_group_budget_flows_into_every_plan():
         p.max_price = 60
     rec = recommend(pois, prefs, origin=(22.518, 113.936))
     assert rec.plans, "预算再紧也要给出方案，不能空手而归"
+    for plan in rec.plans:
+        assert plan.day_budget == 60
+        assert plan.day_cost == pytest.approx(sum(p.avg_price for p in plan.items))
+
+
+def test_budget_is_for_the_whole_day_not_per_stop():
+    """150 元是「一整天」的预算：三站各 98/60/60 每站都没超，合计 218 就是超了。
+
+    以前 max_price 是逐点比较的，于是这种方案会被算成「不超预算」并排到前面。
+    """
+    pois, prefs = _small_setup()
+    for p in prefs:
+        p.max_price = 150
+    rec = recommend(pois, prefs, origin=(22.518, 113.936))
+    assert rec.plans
+    for plan in rec.plans:
+        assert plan.day_cost <= 150 * 1.15, (
+            f"预算 150，方案合计 {plan.day_cost:.0f} 元，超太多了：{plan.explanation}"
+        )
+    cheap = min(rec.plans, key=lambda p: p.day_cost)
+    assert "合计人均" in cheap.explanation
+    assert "超预算" not in cheap.explanation or cheap.day_cost > 150
+
+
+def test_explanation_admits_when_the_day_goes_over_budget():
+    """实在找不到便宜方案时要坦白超预算，而不是写「不超预算」。"""
+    pois, prefs = _small_setup()
+    for p in prefs:
+        p.max_price = 1
+    rec = recommend(pois, prefs, origin=(22.518, 113.936))
+    assert rec.plans
+    top = rec.plans[0]
+    assert top.day_cost > 1
+    assert "超预算" in top.explanation
 
 
 # ---------- 一句话里的正向偏好与硬性时长 ----------

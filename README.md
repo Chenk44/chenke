@@ -3,9 +3,9 @@
 <p>
   <a href="https://github.com/Chenk44/chenke/actions/workflows/ci.yml"><img src="https://github.com/Chenk44/chenke/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/python-3.10%2B-3776ab" alt="python 3.10+">
-  <img src="https://img.shields.io/badge/tests-125%20passed-4dd4ac" alt="125 tests passed">
+  <img src="https://img.shields.io/badge/tests-127%20passed-4dd4ac" alt="127 tests passed">
   <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT license">
-  <img src="https://img.shields.io/badge/data-202%20POIs%20%C2%B7%2020%20areas-orange" alt="202 POIs">
+  <img src="https://img.shields.io/badge/data-200%20POIs%20%C2%B7%2020%20areas-orange" alt="202 POIs">
 </p>
 
 > 同是尘客，同走一程。
@@ -137,7 +137,7 @@ Windows 用户也可以直接双击/运行仓库根目录的 `run.ps1`，它会�
 python -m pytest -q
 ```
 
-125 个测试，覆盖效用函数、聚合规则、组合搜索、一句话解析、营业时间、通行时间表、天气回填，以及全部 API 端点。
+127 个测试，覆盖效用函数、聚合规则、组合搜索、一句话解析、营业时间、通行时间表、天气回填，以及全部 API 端点。
 每个测试都对应文档里的一句话，改坏了 CI 会红。
 
 ## 五、项目结构
@@ -147,7 +147,7 @@ python -m pytest -q
 
 ```
 .
-├── algo/                      1 319 行  纯 Python，不 import 任何 Web / ORM 库
+├── algo/                      1 356 行  纯 Python，不 import 任何 Web / ORM 库
 │   ├── types.py                 136     POI / Preference / Plan；含「几点还开着」的判定
 │   ├── geo.py                    62     球面距离 + 通行时间估算（地铁/驾车两套参数）
 │   ├── travel.py                 74     商圈通行表：查得到用真实路网，查不到退回估算
@@ -156,7 +156,7 @@ python -m pytest -q
 │   ├── combine.py               296     组合与动线搜索、打烊降权、多样性去重、人话解释
 │   ├── pipeline.py              196     把上面几步编排成一次 run()
 │   └── loader.py                178     读 CSV 并逐列校验（脏数据启动即报错）
-├── backend/app/               2 068 行  Web 层，只做三件事：校验、读写库、转格式
+├── backend/app/               2 072 行  Web 层，只做三件事：校验、读写库、转格式
 │   ├── main.py                  117     FastAPI 入口、CORS、静态挂载、422 文案、/api/netinfo
 │   ├── config.py                 39     pydantic-settings 读 .env
 │   ├── db.py                    124     引擎、建表、老库补列与布尔列迁移
@@ -169,37 +169,38 @@ python -m pytest -q
 │   ├── services/nlp.py          389     一句话 → 结构化约束（规则版，3 毫秒，可测）
 │   ├── services/weather.py      246     高德 + Open-Meteo 两级预报，翻成四种天气
 │   └── services/recommender.py  112     ORM ↔ algo 的唯一翻译层
-├── data/pois_shenzhen.csv      35 KB     202 个深圳地点 × 20 列（本项目最核心的资产）
+├── data/pois_shenzhen.csv      35 KB     200 个深圳地点 × 20 列（本项目最核心的资产）
 ├── data/pois_draft.csv         27 KB     脚本先猜的草稿标注（157 条，人工复核的底稿）
 ├── data/amap_shortlist.csv    141 KB     高德候选去重后的短名单（647 条，draft_labels 的输入）
 ├── data/area_travel.csv        11 KB     20 个商圈两两的驾车/公交分钟数（高德路网预计算）
 ├── web/index.html             1 065 行  单页前端，零构建、零依赖；桌面三栏、手机单列
-├── tests/                     1 291 行  125 个用例：算法、聚合、组合、接口、解析、营业时间、通行时间、天气
+├── tests/                     1 325 行  127 个用例：算法、聚合、组合、接口、解析、营业时间、通行时间、天气
 │   ├── conftest.py               39     先设 DATABASE_URL 再 import app（顺序很关键）
 │   ├── test_algo.py             459     效用、聚合、组合、时间线、加载器校验、全员排除
 │   ├── test_api.py              316     全部接口的端到端行为
 │   ├── test_nlp.py              148     一句话解析的边界（含否定与条件句）
 │   ├── test_hours.py            154     高德时间串解析、跨零点、打烊降权
 │   └── test_travel.py            55     商圈通行表查询与「查不到就估算」的兜底
-├── scripts/                   1 704 行
+├── scripts/                   1 828 行
 │   ├── seed.py                   94     CSV → 数据库，可重复执行（--reset 清空重来）
 │   ├── demo.py                  175     命令行端到端演示：不开浏览器也能看到算法在干什么
 │   ├── fetch_amap.py            256     高德 POI 拉取（缓存、重试、直连兜底）
 │   ├── shortlist.py             161     候选短名单：品牌去重 + 每商圈每品类限额
 │   ├── draft_labels.py          371     草稿标注：把高德拿不到的 9 个字段先猜一版
 │   ├── merge_pois.py             70     人工表 + 草稿表合并（同名同地点去重）
+│   ├── fix_prices.py            124     人均价格清洗：免费场所一律 0，别让书城收门票
 │   ├── open_hours.py            103     营业时间：解析高德时间串、按品类兜底
 │   ├── backfill_hours.py        101     把营业时间回填进 CSV（149 条来自高德）
 │   ├── fetch_travel.py          154     商圈两两通行时间预计算（380 次请求落成一张表）
 │   ├── audit_pois.py           116     数据体检：把可疑标注挑出来，人只复核这几行
 │   └── layout_probe.py          102     移动端布局体检（CDP 量宽度、找越界元素）
 ├── docs/
-│   ├── ALGORITHM.md             468     算法说明书：从痛点推到公式
+│   ├── ALGORITHM.md             507     算法说明书：从痛点推到公式
 │   ├── API.md                   350     17 个接口 + 真实响应样例
-│   ├── DATA.md                  139     数据来源、标注口径、合规说明
+│   ├── DATA.md                  153     数据来源、标注口径、合规说明
 │   ├── evidence.html                   答辩证据页：一页看完所有数字 + 复现命令（离线单文件）
 │   └── preview-*.png                    README 用的两张真实截图
-├── .github/workflows/ci.yml      44     push 即跑：ruff → 灌数据 → 125 测试 → 真起服务 curl
+├── .github/workflows/ci.yml      44     push 即跑：ruff → 灌数据 → 127 测试 → 真起服务 curl
 ├── run.ps1 / run.sh                     一键启动（Windows / macOS+Linux）
 ├── Dockerfile                    32     多阶段构建 + 非 root 用户
 └── requirements.txt / pyproject.toml    依赖 7 个；pytest 与 ruff 配置
@@ -222,7 +223,7 @@ web/index.html          点「生成方案」
 
 三个刻意的分层决定，答辩时可以直接讲：
 
-1. **`algo/` 不 import FastAPI，也不 import SQLAlchemy**。1 319 行算法被 69 个算法与解析测试直接覆盖，
+1. **`algo/` 不 import FastAPI，也不 import SQLAlchemy**。1 356 行算法被 71 个算法与解析测试直接覆盖，
    跑测试不需要起服务、不需要连着数据库、不需要网络。算法是这个项目的价值，它必须能单独被验证。
 2. **`services/recommender.py` 是唯一同时认识两边的文件**。它导出 `record_to_poi` /
    `member_to_preference` / `run_recommendation` 三个函数；`algo` 反向完全不认识数据库。
@@ -303,7 +304,7 @@ docker run -p 8000:8000 chenke
 这一节不是免责声明，是**取舍清单**：哪些是刻意不做的，哪些是做了但没做到底的，都有具体数字。
 
 1. **只做了深圳。** 换城市要重跑 `fetch_amap` → `shortlist` → `draft_labels` → `backfill_hours`，
-   再人工复核 2 天。这是刻意的：十个城市各 20 条，不如一个城市 202 条标得准。
+   再人工复核 2 天。这是刻意的：十个城市各 20 条，不如一个城市 200 条标得准。
 2. **通行时间是「预计算 + 估算」的组合，不是实时路况。**
    20 个商圈的两两时间已经用高德路径规划拉下来了（`data/area_travel.csv`，190 对 ×
    驾车/公交 = 380 行，双向各一行，跟着仓库走，断网也能用）；
@@ -311,7 +312,7 @@ docker run -p 8000:8000 chenke
    最离谱的例子是「海岸城 → 龙华」，估算 40 分钟，实际公交 83 分钟。
    不在运行时直接调 API，是因为一次推荐要算 24² 量级的两两时间，免费配额会被枚举打光。
 3. **营业时间只到「这个点去还开不开」，不到「今天开不开」。**
-   202 个地点里 149 条的营业时间直接来自高德，其余 53 条按品类和名字兜底
+   200 个地点里约 150 条的营业时间直接来自高德，其余按品类和名字兜底
    （公园全天、美术馆 10-22、夜宵摊到凌晨 2 点）。到了打烊时间只降权 0.25 并标红，
    不硬删——因为把出发时间提前半小时可能就又能去了。
    节假日、临时闭馆、需要预约的场次都还没建模。
@@ -322,7 +323,7 @@ docker run -p 8000:8000 chenke
    说「不要桌游」只乘 0.2 的惩罚；但**五个人都说不要的品类会被直接从候选里删掉**，
    并在方案上方明说「已去掉 N 个地点」。硬过滤一个人说了算，容易一次误判把好地点全毙掉；
    代价是「我说了想吃火锅」偶尔仍会混进别的类型。
-6. **202 条里有一半是「脚本先猜、人工复核」出来的。** 名字/坐标/评分/人均/营业时间来自高德，
+6. **200 条里有一半是「脚本先猜、人工复核」出来的。** 名字/坐标/评分/人均/营业时间来自高德，
    室内外、安静度、适合人数这些是标出来的。为了不让错误烂在库里，写了
    `python -m scripts.audit_pois` 做交叉体检（公园标成室内、餐饮人均 0、只开 2 小时、
    同名同坐标），现在报 0 处可疑；发现错标就在 `data/pois_shenzhen.csv` 改一行、

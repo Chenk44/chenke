@@ -104,6 +104,9 @@ def run_recommendation(db: Session, group: Group) -> Recommendation:
         window_minutes=group.window_minutes,
         top_k=3,
         origin_area=group.origin_area,
+        # 局里填的就是「这一天的预算」，原样传下去；个人的「人均 100 以内」
+        # 仍然作为他自己那格效用的软约束，不再冒充全组预算。
+        day_budget=group.budget or None,
     )
 
 

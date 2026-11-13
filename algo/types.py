@@ -134,3 +134,7 @@ class Plan:
     offsets: list[float] = field(default_factory=list)
     # 到达时已经打烊的地点 id（有的话排序会被扣分，解释卡也会点名）
     closed: tuple[str, ...] = ()
+    # 这一天人均花多少（各站相加），以及当时的日预算；预算按「一整天」算，
+    # 不是「每一站都不超」，两者差别很大：三站各 98/60/60 每站都没超 150，合计 218 就超了。
+    day_cost: float = 0.0
+    day_budget: float | None = None

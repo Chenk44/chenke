@@ -44,6 +44,8 @@ CAP_OVERRUN_PER_HOUR = 0.20
 
 # 排到那儿已经打烊了：不是不能去，但得让它排后面
 CLOSED_PENALTY = 0.25
+# 方案合计超过日预算时，按超出的比例扣分（超 100% 扣 0.6，封顶 0.9）
+BUDGET_OVERRUN_PENALTY = 0.6
 
 MAX_ITEMS = 3
 MIN_ITEMS = 2
@@ -74,6 +76,7 @@ def _explain(
     prefs: list[Preference],
     total_minutes: float,
     closed: tuple[str, ...] = (),
+    day_budget: float | None = None,
 ) -> str:
     """用规则拼一句人话解释，而不是让大模型编。
 
@@ -98,9 +101,19 @@ def _explain(
         bits.append("全程室内，下雨也不怕")
     if all(p.kid_friendly for p in seq) and any(p.with_kids for p in prefs):
         bits.append("每个点都能带娃")
-    cheap = max((p.avg_price for p in seq), default=0)
-    if cheap and all(p.max_price is None or cheap <= p.max_price for p in prefs):
-        bits.append(f"最贵一餐人均 {cheap:.0f} 元，不超预算")
+    # 预算按「这一天合计」说，不能只说最贵的单站：
+    # 三站 98+60+60 每一站都没超 150，但合计 218 已经超了 45%。
+    day_cost = sum(p.avg_price for p in seq)
+    if day_budget:
+        if day_cost <= day_budget:
+            bits.append(f"三站合计人均 {day_cost:.0f} 元，在预算 {day_budget:.0f} 元以内")
+        else:
+            over = (day_cost / day_budget - 1) * 100
+            bits.append(
+                f"三站合计人均 {day_cost:.0f} 元，超预算 {over:.0f}%（{day_budget:.0f} 元）"
+            )
+    elif day_cost:
+        bits.append(f"三站合计人均 {day_cost:.0f} 元")
 
     # 排到那儿已经关门了：诚实说出来，别让用户到了门口才发现
     if closed:
@@ -123,6 +136,7 @@ def build_plans(
     require_food: bool = True,
     start_minute: int = 14 * 60,
     origin_area: str | None = None,
+    day_budget: float | None = None,
 ) -> list[Plan]:
     """返回按综合分排序的 top_k 个方案。"""
     if not pois or not prefs:
@@ -217,6 +231,12 @@ def build_plans(
                 over_cap = 0.0
                 if minute_cap is not None and total > minute_cap:
                     over_cap = CAP_OVERRUN_PER_HOUR * (total - minute_cap) / 60.0
+                # 预算是一整天的：三站合计超了才算超，单站不超没有意义
+                day_cost = sum(p.avg_price for p in seq)
+                budget_penalty = 0.0
+                if day_budget and day_cost > day_budget:
+                    over_ratio = min((day_cost - day_budget) / day_budget, 1.5)
+                    budget_penalty = BUDGET_OVERRUN_PENALTY * over_ratio
                 score = (
                     base
                     - ROUTE_PENALTY_PER_HOUR * (route / 60.0)
@@ -224,6 +244,7 @@ def build_plans(
                     - UNDERFILL_PENALTY * shortfall
                     - over_cap
                     - CLOSED_PENALTY * len(closed)
+                    - budget_penalty
                 )
                 if best_for_combo is None or score > best_for_combo[0]:
                     best_for_combo = (score, seq, total, offsets, closed)
@@ -248,6 +269,7 @@ def build_plans(
                 top_k,
                 pool_size,
                 require_food=False,
+                day_budget=day_budget,
             )
         return []
 
@@ -287,10 +309,12 @@ def build_plans(
                 worst_score=per_member[worst_member],
                 worst_member=worst_member,
                 total_minutes=total,
-                explanation=_explain(seq, per_member, prefs, total, closed),
+                explanation=_explain(seq, per_member, prefs, total, closed, day_budget),
                 per_member=per_member,
                 offsets=offsets,
                 closed=closed,
+                day_cost=sum(p.avg_price for p in seq),
+                day_budget=day_budget,
             )
         )
     return plans

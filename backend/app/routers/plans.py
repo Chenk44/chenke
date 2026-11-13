@@ -45,6 +45,8 @@ def plan_to_out(record: PlanRecord, group: Group) -> PlanOut:
         worst_score=p["worst_score"],
         worst_member=p["worst_member"],
         total_minutes=p["total_minutes"],
+        day_cost=p.get("day_cost", 0.0),
+        day_budget=p.get("day_budget"),
         explanation=p["explanation"],
         per_member=p["per_member"],
     )

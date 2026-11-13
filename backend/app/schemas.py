@@ -149,6 +149,8 @@ class PlanOut(BaseModel):
     worst_score: float
     worst_member: str
     total_minutes: float
+    day_cost: float = Field(default=0.0, description="这一天人均花多少（各站相加）")
+    day_budget: float | None = Field(default=None, description="局的日预算；None 表示没设")
     explanation: str
     per_member: dict[str, float]
 

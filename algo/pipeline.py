@@ -63,6 +63,8 @@ class Recommendation:
                     "worst_score": round(plan.worst_score, 4),
                     "worst_member": plan.worst_member,
                     "total_minutes": round(plan.total_minutes, 1),
+                    "day_cost": round(plan.day_cost, 1),
+                    "day_budget": plan.day_budget,
                     "explanation": plan.explanation,
                     "per_member": {k: round(v, 4) for k, v in plan.per_member.items()},
                 }
@@ -116,6 +118,7 @@ def recommend(
     top_k: int = 3,
     meet_date: date | None = None,
     origin_area: str | None = None,
+    day_budget: float | None = None,
 ) -> Recommendation:
     """主入口。origin 是出发点坐标（一般是集合地点）。"""
     if not pois:
@@ -165,6 +168,17 @@ def recommend(
     start_hour = max((p.start_hour for p in prefs if p.start_hour), default=DEFAULT_START_HOUR)
     start_minute = int(start_hour) * 60
 
+    # 预算按「一整天」算，取全组最紧的那条。
+    # 之前这里是每条偏好只管自己那一站，于是三站各 98/60/60 全都「没超」，
+    # 合计 218 却超过 150 的预算，页面上还写着「不超预算」。
+    # 局里填的预算才是「这一天的预算」；个人那句「人均 100 以内」是个人约束，
+    # 只在没有局预算时兜底，否则会出现「填了 150，卡片上写预算 100」这种对不上的情况。
+    if day_budget is None:
+        day_budget = min(
+            (p.max_price for p in prefs if p.max_price is not None),
+            default=None,
+        )
+
     # 3) 组合搜索
     plans = build_plans(
         pois=pois,
@@ -177,6 +191,7 @@ def recommend(
         top_k=top_k,
         start_minute=start_minute,
         origin_area=origin_area,
+        day_budget=day_budget,
     )
 
     if len(plans) == 0:
