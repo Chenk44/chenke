@@ -20,9 +20,11 @@
 ![首屏](docs/preview-home.png)
 
 <details>
-<summary>点开看方案的完整样子（真实运行截图，示例局 5 个人、下雨天）</summary>
+<summary>点开看方案的完整样子（真实运行截图：桌面端三个方案并排，示例局 5 个人、下雨天）</summary>
 
 ![方案页](docs/preview-plans.png)
+
+*桌面端横向铺满、三个方案一屏比完；手机上自动退成单列，卡片顺序不变。*
 
 </details>
 
@@ -171,7 +173,7 @@ python -m pytest -q
 ├── data/pois_draft.csv         27 KB     脚本先猜的草稿标注（157 条，人工复核的底稿）
 ├── data/amap_shortlist.csv    141 KB     高德候选去重后的短名单（647 条，draft_labels 的输入）
 ├── data/area_travel.csv        11 KB     20 个商圈两两的驾车/公交分钟数（高德路网预计算）
-├── web/index.html               806 行  单页前端，零构建、零依赖、不需要 npm
+├── web/index.html             1 065 行  单页前端，零构建、零依赖；桌面三栏、手机单列
 ├── tests/                     1 291 行  125 个用例：算法、聚合、组合、接口、解析、营业时间、通行时间、天气
 │   ├── conftest.py               39     先设 DATABASE_URL 再 import app（顺序很关键）
 │   ├── test_algo.py             459     效用、聚合、组合、时间线、加载器校验、全员排除
