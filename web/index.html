@@ -94,6 +94,10 @@
   .home-hero h1 mark { background: var(--yellow); padding: 0 .1em; }
   .home-hero p { margin: 14px 0 0; font-size: 13px; font-weight: 600; color: var(--muted); max-width: 560px; }
   .home { display: grid; grid-template-columns: 1.3fr 1fr; gap: 22px; align-items: start; }
+  .steps-card { background: var(--card); }
+  .steps-list { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; font-weight: 600; line-height: 2; }
+  .steps-list b { font-weight: 900; }
+  .steps-list li::marker { font-family: "Cascadia Mono", ui-monospace, monospace; font-weight: 800; }
   .home .stack > .card:last-child { margin-bottom: 0; }
 
   /* ── 局内 ─────────────────────────────────────── */
@@ -499,6 +503,15 @@ async function renderHome() {
               <input id="j-nick" type="text" placeholder="小王" /></label>
           </div>
           <button class="full" id="btn-join">加入这个局</button>
+        </div>
+
+        <div class="card steps-card">
+          <h2>怎么用<span class="hint">三步，一次决策</span></h2>
+          <ol class="steps-list">
+            <li><b>建局</b>　把 6 位邀请码发到群里</li>
+            <li><b>各填各的</b>　三个滑杆 + 一句话，不用商量</li>
+            <li><b>定案</b>　三套走法摆一起，投一票就出发</li>
+          </ol>
         </div>
       </div>
     </div>`;
