@@ -89,14 +89,14 @@
     <div class="brand">尘客 · CHENKE</div>
     <h1>技术文档</h1>
     <div class="sub">给一群人推荐去哪玩 —— 意图控制、架构约束与可复现性</div>
-    <div class="tagline">众口不再难调 · 只做深圳 · 202 个地点 · 125 个测试</div>
+    <div class="tagline">同是尘客 · 只做深圳 · 200 个地点 · 127 个测试</div>
   </div>
   <div class="meta">
     <div><b>项目名称：</b>尘客（Chenke）</div>
     <div><b>一句话：</b>把「我们这群人去哪」拆成 16 个结构化约束，算出一组可执行方案，并说明谁让了步。</div>
-    <div><b>仓库：</b>github.com/Chenk44/chenke　<b>版本：</b>v1.0.0（commit c7a14f5）</div>
+    <div><b>仓库：</b>github.com/Chenk44/chenke　<b>版本：</b>v1.0.0（commit 447ca21）</div>
     <div><b>技术栈：</b>Python 3.12 / FastAPI 0.162 / SQLAlchemy 2.1 / 原生 HTML+JS（零构建）</div>
-    <div><b>文档日期：</b>2026-11-12　<b>页数：</b>不超过 30 页</div>
+    <div><b>文档日期：</b>2026-11-17　<b>页数：</b>不超过 30 页</div>
   </div>
   <div class="bottom">
     本文档重点回答三个问题：<b>① AI 写代码时，我如何控制它想做的事（意图控制策略）；② 它写出来的代码被约束成什么架构；③ 别人拿到仓库能否跑出同样的结果（可复现性论证）。</b>
@@ -112,7 +112,7 @@
     <li class="l1">2　意图控制策略：怎么让 AI 做我要的东西</li>
     <li class="l2">2.1 从一句话需求到可执行约束　2.2 上下文分五层　2.3 四类提示词骨架</li>
     <li class="l2">2.4 四类典型失控与对策　2.5 人机分工的边界　2.6 诊断优先于修复</li>
-    <li class="l2">2.7 意图控制的账本</li>
+    <li class="l2">2.7 意图控制的账本　2.8 当 AI 写下的业务逻辑本身是错的</li>
     <li class="l1">3　架构设计：AI 生成的代码被约束成了什么形状</li>
     <li class="l2">3.1 四层与依赖方向　3.2 为什么算法层不认识框架　3.3 契约先行</li>
     <li class="l2">3.4 状态演化与迁移　3.5 降级链　3.6 复杂度预算　3.7 前端策略　3.8 约束怎么被强制</li>
@@ -144,28 +144,28 @@
   <b>输出三个方案 + 投票定案</b>。每个方案都同时给出「大家的共识度」和「谁让步最多」，
   把群体决策里最容易被忽视的信息摆到台面上。</p>
   <div class="box">
-    <b>范围是刻意收窄的：</b>只做深圳。一座城市的 202 个地点标得准，胜过十个城市各 20 条。
+    <b>范围是刻意收窄的：</b>只做深圳。一座城市的 200 个地点标得准，胜过十个城市各 20 条。
     这个决定同时约束了数据、算法与文档——后面所有「为什么不做得更大」的问题，答案都回到这一句。
   </div>
 
   <h3>1.2 规模与验收数字</h3>
   <div class="kpi">
-    <div><b>202</b><span>深圳地点</span></div>
+    <div><b>200</b><span>深圳地点</span></div>
     <div><b>20</b><span>商圈</span></div>
-    <div><b>125</b><span>自动化测试</span></div>
+    <div><b>127</b><span>自动化测试</span></div>
     <div><b>17</b><span>HTTP 接口</span></div>
-    <div><b>39</b><span>提交（3 天）</span></div>
+    <div><b>47</b><span>提交（7 天）</span></div>
   </div>
   <table>
     <thead><tr><th style="width:24%">指标</th><th style="width:22%">数值</th><th>口径 / 出处</th></tr></thead>
-    <tr><td>地点数据</td><td>202 条 × 20 列</td><td><code>data/pois_shenzhen.csv</code>，<code>csv.DictReader</code> 计数</td></tr>
+    <tr><td>地点数据</td><td>200 条 × 20 列</td><td><code>data/pois_shenzhen.csv</code>，<code>csv.DictReader</code> 计数</td></tr>
     <tr><td>商圈</td><td>20 个，每商圈 8–13 条</td><td>同上，<code>Counter(area)</code></td></tr>
-    <tr><td>室内 / 室外</td><td>122 / 80</td><td>同上，按 <code>indoor</code> 列计</td></tr>
+    <tr><td>室内 / 室外</td><td>122 / 78</td><td>同上，按 <code>indoor</code> 列计</td></tr>
     <tr><td>商圈通行表</td><td>190 对 × 2 = 380 行</td><td><code>data/area_travel.csv</code>，高德路径规划预计算</td></tr>
-    <tr><td>代码规模</td><td>algo 1 319 / backend 2 068 / tests 1 291 / scripts 1 704 / web 806 行</td><td>逐文件 <code>splitlines()</code>，含空行与 <code>__init__.py</code></td></tr>
-    <tr><td>测试</td><td>125 个（算法 40 / 接口 26 / 解析 29 / 营业时间 16 / 通行表 5 / 天气 9）</td><td><code>pytest --collect-only -q</code></td></tr>
-    <tr><td>提交</td><td>39 次，2026-11-10 10:01 → 11-12 19:20</td><td><code>git rev-list --count HEAD</code></td></tr>
-    <tr><td>单次推荐成本</td><td>1 005 次打分，约 3 毫秒</td><td><code>docs/ALGORITHM.md</code> §8 实测</td></tr>
+    <tr><td>代码规模</td><td>algo 1 356 / backend 2 072 / tests 1 325 / scripts 1 828 / web 1 105 行</td><td>逐文件 <code>splitlines()</code>，含空行与 <code>__init__.py</code></td></tr>
+    <tr><td>测试</td><td>127 个（算法 42 / 接口 26 / 解析 29 / 营业时间 16 / 通行表 5 / 天气 9）</td><td><code>pytest --collect-only -q</code></td></tr>
+    <tr><td>提交</td><td>47 次，2026-11-10 10:01 → 11-17 20:05</td><td><code>git rev-list --count HEAD</code></td></tr>
+    <tr><td>单次推荐成本</td><td>1 000 次打分，约 86 毫秒（含组合枚举）</td><td><code>docs/ALGORITHM.md</code> §8 实测</td></tr>
   </table>
 
   <h3>1.3 本文档的证据来源</h3>
@@ -324,19 +324,50 @@
       <td>模型再对，池子里没有室外点也出不来室外方案</td>
     </tr>
   </table>
-  <p>这次排查直接决定了后面三天的路线：<b>改词表与否定引擎 → 改字段为三态 → 把数据从 49 条扩到 202 条</b>。
+  <p>这次排查直接决定了后面三天的路线：<b>改词表与否定引擎 → 改字段为三态 → 把数据从 49 条扩到 200 条</b>。
   如果当时直接按「加个 AI 就好」的思路动手，三层里只会修第一层，而这个 bug 至今还活着。</p>
 
   <h3>2.7 意图控制的账本</h3>
   <p>把三天的协作结果记成账，比任何描述都直观：</p>
   <table>
     <thead><tr><th style="width:34%">意图</th><th style="width:22%">落成的约束</th><th>可检查的结果</th></tr></thead>
-    <tr><td>「不要玩具项目」</td><td>只做深圳 + 202 条人工标注 + 真实高德数据</td><td>数据体检脚本 <code>audit_pois.py</code> 报 0 处可疑</td></tr>
+    <tr><td>「不要玩具项目」</td><td>只做深圳 + 200 条人工标注 + 真实高德数据</td><td>数据体检脚本 <code>audit_pois.py</code> 报 0 处可疑</td></tr>
     <tr><td>「不能是套壳开源项目」</td><td>自研效用函数 + 双聚合规则 + 组合搜索</td><td>69 个算法/解析测试钉住每个公式</td></tr>
-    <tr><td>「10 天 solo 能做完」</td><td>砍掉聊天/小程序/多城市/支付；技术栈按「能否独立写完 CRUD」定</td><td>3 天完成 39 次提交、125 个测试、CI 绿</td></tr>
+    <tr><td>「10 天 solo 能做完」</td><td>砍掉聊天/小程序/多城市/支付；技术栈按「能否独立写完 CRUD」定</td><td>7 天完成 47 次提交、127 个测试、CI 绿</td></tr>
     <tr><td>「评委能跑起来」</td><td>零构建前端 + SQLite + 三条命令 + Dockerfile</td><td>洁净目录实测通过（第 4.2 节）</td></tr>
     <tr><td>「别糊弄我」</td><td>数字核对式提示 + 已知局限带具体数字</td><td>自检揪出 9 处文档偏差并修正</td></tr>
   </table>
+
+  <h3>2.8 当 AI 写下的业务逻辑本身是错的</h3>
+  <p>前面几节讲的是「AI 没听懂我要什么」。这一节是另一种更危险的情况：<b>AI 完全听懂了，代码也跑得很顺，
+  但业务逻辑本身是错的，而且错得很像一个正常实现。</b>它由一道小学加法暴露出来——</p>
+  <div class="quote">
+    <b>我的原话（2026-11-13 16:44）：</b>「方案一里面有三个项目，每个项目不超过 100 块钱，但加起来是超过了这一天的预算的，
+    这里你是怎么写的代码啊？逻辑判断是什么？」
+  </div>
+  <p>AI 的第一反应不是辩解，是<b>先把四层位置摆出来</b>，而且每一层都指向具体行号：</p>
+  <table>
+    <thead><tr><th style="width:26%">层</th><th style="width:38%">原来的写法</th><th>问题</th></tr></thead>
+    <tr><td><code>recommender.py:62</code></td><td><code>max_price = min(member.max_price, group.budget)</code></td><td>把<b>日预算</b>降维成<b>单站上限</b></td></tr>
+    <tr><td><code>utility.py:161</code></td><td><code>poi.avg_price &gt; max_price</code> → ×0.2</td><td>逐点判断：98 / 60 / 60 每站都「不超」，合计 218 没人管</td></tr>
+    <tr><td><code>combine.py</code></td><td>只有时长、打烊、品类去重</td><td>方案层<b>根本没有预算求和</b></td></tr>
+    <tr><td><code>combine.py:101</code></td><td><code>cheap = max(单站价格)</code></td><td>文案写「最贵一餐 98 元，不超预算」——比不写更糟</td></tr>
+  </table>
+  <p>修法是把预算放回它该在的层级：<code>day_cost = Σ 每一站人均</code>，
+  <code>over_ratio = min((day_cost − day_budget) / day_budget, 1.5)</code>，
+  <code>score −= 0.6 × over_ratio</code>。用扣分而不是过滤，是因为超一点点不该判死刑，
+  但 218/150 还能排第一，这个预算就等于没填。解释卡与卡片现在说同一句话：
+  「三站合计人均 98 元，在预算 150 元以内」，超预算时卡片上的 chip 会变粉。</p>
+  <p><b>真正让这个 bug 变严重的是数据。</b>顺着这条线往下查，发现草稿标注脚本对「高德没给人均」的行套了品类默认价
+  （展览 60、玩乐 110），于是「南山书城 人均 60 元」这种错标进了数据——书城没有门票。
+  这类错标不会报错，只会让每个方案的合计悄悄偏高。新增 <code>scripts/fix_prices.py</code>：
+  公园/海滩/书店/博物馆/美术馆/商场一律标 0，只有真有门票的按人工价表（仙湖植物园 20、音乐厅 120、摩天轮 100）；
+  同时改了 47 条价格、37 条解释文案里跟着写错的人均，删掉 2 条同地重复点。</p>
+  <div class="box dark">
+    <b>这一节的结论：</b>AI 最容易错的不是语法，是<b>语义</b>——「人均预算」到底是每一站还是一整天，
+    这个歧义在代码里看不出来，只有拿一个具体方案做一次加法才暴露。
+    所以验收标准必须是<b>可算的数字</b>（98+60+60≠150），不是「看起来对」。
+  </div>
 </section>
 
 <!-- ============ 3 ============ -->
@@ -385,7 +416,7 @@ data/*.csv  ──seed──►  SQLite（chenke.db）</code></pre>
     <thead><tr><th style="width:18%">契约</th><th style="width:26%">载体</th><th style="width:28%">校验方式</th><th>违反时的表现</th></tr></thead>
     <tr><td>数据契约</td><td><code>data/pois_shenzhen.csv</code> 20 列</td><td><code>algo/loader.py</code> 逐列校验：品类必须在 7 个枚举内、经纬度在深圳范围内、营业时间 <code>0 ≤ open &lt; close ≤ 26</code></td><td>启动即抛 <code>ValueError</code>，并指出是哪一行哪一列</td></tr>
     <tr><td>接口契约</td><td><code>backend/app/schemas.py</code></td><td>Pydantic 模型 + 约束（<code>indoor_pref: ge=-1, le=1</code>）</td><td>422，并被全局 handler 压成一句人话</td></tr>
-    <tr><td>行为契约</td><td><code>tests/</code> 125 个用例</td><td>同一输入必须同一输出（含时间线分钟数）</td><td>CI 红，推不上去</td></tr>
+    <tr><td>行为契约</td><td><code>tests/</code> 127 个用例</td><td>同一输入必须同一输出（含时间线分钟数）</td><td>CI 红，推不上去</td></tr>
   </table>
   <p>契约先行带来的一个意外好处：<b>字段可以先于数据库演化</b>。
   解析器最早就能输出 16 个字段，但数据库只有 11 列；
@@ -422,7 +453,7 @@ data/*.csv  ──seed──►  SQLite（chenke.db）</code></pre>
   <p>AI 很容易把「优化」当成「上算法」。这个项目的搜索空间其实很小，所以架构上明确写死：<b>枚举，不上遗传算法</b>。</p>
   <table>
     <thead><tr><th style="width:22%">阶段</th><th style="width:26%">规模</th><th>实测</th></tr></thead>
-    <tr><td>单点打分</td><td>202 个地点 × 5 人</td><td>1 005 次打分</td></tr>
+    <tr><td>单点打分</td><td>200 个地点 × 5 人</td><td>1 000 次打分</td></tr>
     <tr><td>候选池</td><td>共识分前 24（最多 +4 个餐饮兜底）</td><td>—</td></tr>
     <tr><td>组合枚举</td><td>C(20,3) = 1 140 种组合 × 6 种顺序</td><td>约 3 毫秒</td></tr>
     <tr><td>多样性去重</td><td>Jaccard 阈值 0.20 → 0.34 → 1.01 逐级放宽</td><td>保证三个方案不共用前两个点</td></tr>
@@ -458,10 +489,10 @@ data/*.csv  ──seed──►  SQLite（chenke.db）</code></pre>
   <div class="box dark">
     <b>任何一台装了 Python 3.10+ 的机器，clone 仓库后执行三条命令，就能得到本文档描述的同一套结果：</b><br><br>
     <code>pip install -r requirements.txt</code><br>
-    <code>python -m scripts.seed</code>　　　　→ 期望输出：<b>共 202 条</b><br>
+    <code>python -m scripts.seed</code>　　　　→ 期望输出：<b>共 200 条</b><br>
     <code>python -m uvicorn app.main:app --app-dir backend</code>　→ 打开 <code>http://127.0.0.1:8000</code>
   </div>
-  <p>「同一套结果」指四件事：<b>202 条数据进库、125 个测试全绿、示例局的推荐结果与文档一致、页面能打开并投票</b>。
+  <p>「同一套结果」指四件事：<b>200 条数据进库、127 个测试全绿、示例局的推荐结果与文档一致、页面能打开并投票</b>。
   下面用一次真实实验来证明，而不是断言。</p>
 
   <h3>4.2 洁净检出实验</h3>
@@ -470,11 +501,11 @@ data/*.csv  ──seed──►  SQLite（chenke.db）</code></pre>
   <table>
     <thead><tr><th style="width:6%">#</th><th style="width:40%">命令</th><th>实际输出（原文）</th></tr></thead>
     <tr><td>0</td><td><code>git archive --format=tar HEAD -o clean.tar</code> → 解到空目录</td><td>还原出 18 个顶层条目；<code>.venv</code> / <code>.env</code> / <code>*.db</code> / <code>.tmp</code> <b>均不存在</b></td></tr>
-    <tr><td>1</td><td><code>python -m scripts.seed</code></td><td><code>✅ 地点库已更新：新增 202 条，更新 0 条，共 202 条</code></td></tr>
-    <tr><td>2</td><td><code>pytest -q tests</code></td><td><code>125 passed, 1 warning in 11.88s</code></td></tr>
+    <tr><td>1</td><td><code>python -m scripts.seed</code></td><td><code>✅ 地点库已更新：新增 0 条，更新 200 条，共 200 条</code></td></tr>
+    <tr><td>2</td><td><code>pytest -q tests</code></td><td><code>127 passed, 1 warning in 6.73s</code></td></tr>
     <tr><td>3</td><td><code>python -m scripts.demo</code></td><td>exit code <code>0</code>；终端打印 3 个方案的共识度与投票结果</td></tr>
     <tr><td>4</td><td><code>uvicorn app.main:app --port 8021</code></td><td><code>/api/health</code> → <code>{"status":"ok","app":"尘客","version":"0.1.0"}</code></td></tr>
-    <tr><td>5</td><td><code>GET /api/areas</code> / <code>GET /api/pois</code></td><td>20 个商圈；202 个地点</td></tr>
+    <tr><td>5</td><td><code>GET /api/areas</code> / <code>GET /api/pois</code></td><td>20 个商圈；200 个地点</td></tr>
     <tr><td>6</td><td><code>POST /api/demo</code> → <code>POST /api/groups/{code}/recommend</code></td><td>3 个方案，共识度 <code>0.735 / 0.691 / 0.645</code>，notes 为 <code>["💧 检测到降雨，已自动优先室内地点"]</code></td></tr>
     <tr><td>7</td><td><code>GET /</code></td><td>首页 33 406 字节（单页应用本体）</td></tr>
   </table>
@@ -504,7 +535,7 @@ data/*.csv  ──seed──►  SQLite（chenke.db）</code></pre>
   <h3>4.5 环境矩阵</h3>
   <table>
     <thead><tr><th style="width:26%">环境</th><th style="width:22%">状态</th><th>备注</th></tr></thead>
-    <tr><td>Windows 10 + Python 3.12.14</td><td>开发环境，全绿</td><td>125 测试通过；本机服务 /api/health 200</td></tr>
+    <tr><td>Windows 10 + Python 3.12.14</td><td>开发环境，全绿</td><td>127 测试通过；本机服务 /api/health 200</td></tr>
     <tr><td>Linux + Python 3.12（GitHub Actions）</td><td>绿</td><td>每次 push 自动跑：ruff → seed → pytest → 起服务 curl</td></tr>
     <tr><td>Linux + Python 3.10（GitHub Actions）</td><td>绿</td><td>验证没有用到 3.11+ 语法</td></tr>
     <tr><td>Docker（Dockerfile 多阶段）</td><td>已提供未本地验证</td><td>仓库有 <code>Dockerfile</code>（32 行，非 root，<code>CMD seed &amp;&amp; uvicorn</code>），作者本机未安装 Docker，此项属于<b>未验证项</b>，如实说明</td></tr>
@@ -580,12 +611,12 @@ data/*.csv  ──seed──►  SQLite（chenke.db）</code></pre>
   没有爬任何点评类站点——这是合规底线，也是答辩时第一个可能被问到的点。</p>
   <table>
     <thead><tr><th style="width:26%">品类</th><th style="width:12%">条数</th><th style="width:26%">品类</th><th>条数</th></tr></thead>
-    <tr><td>公园</td><td>58</td><td>餐饮</td><td>22</td></tr>
+    <tr><td>公园</td><td>56</td><td>餐饮</td><td>22</td></tr>
     <tr><td>玩乐</td><td>38</td><td>咖啡</td><td>18</td></tr>
     <tr><td>展览</td><td>34</td><td>夜生活</td><td>10</td></tr>
-    <tr><td>影院</td><td>22</td><td>合计</td><td><b>202</b></td></tr>
+    <tr><td>影院</td><td>22</td><td>合计</td><td><b>200</b></td></tr>
   </table>
-  <p>室内 122 / 室外 80，<b>每个商圈至少 3 个室外点</b>——这条数字是硬要求，因为它是「说不想去室内却推室内」那个 bug 的数据层根因。</p>
+  <p>室内 122 / 室外 78，<b>每个商圈至少 3 个室外点</b>——这条数字是硬要求，因为它是「说不想去室内却推室内」那个 bug 的数据层根因。</p>
 
   <h3>5.4 已知局限（带数字）</h3>
   <p>这一节不是免责声明，是<b>取舍清单</b>。能修的四条已经修完（营业时间、通行时间、全员排除、数据体检），剩下的三条是刻意不做：</p>
@@ -596,17 +627,17 @@ data/*.csv  ──seed──►  SQLite（chenke.db）</code></pre>
     <li><b>营业时间只到「这个点还开不开」，不到「今天开不开」。</b>没有节假日数据，元旦去美术馆可能吃闭门羹。</li>
   </ol>
   <p>另外两条是「做了但没做到底」，也写清数字：通行时间表只覆盖 20 个商圈两两（190 对），同商圈内部仍是估算，误差约 20%；
-  202 条里有一半是脚本先猜、人工复核，<code>scripts/audit_pois.py</code> 目前报 <b>0 处可疑</b>，发现错标改一行 CSV 再 <code>seed</code> 即可。</p>
+  200 条里有一半是脚本先猜、人工复核，<code>scripts/audit_pois.py</code> 目前报 <b>0 处可疑</b>，发现错标改一行 CSV 再 <code>seed</code> 即可。</p>
 
   <h3>5.5 三分钟复现清单</h3>
   <div class="box">
     <ol style="margin:0">
       <li><code>git clone https://github.com/Chenk44/chenke &amp;&amp; cd chenke</code></li>
       <li><code>python -m venv .venv</code> → 激活 → <code>pip install -r requirements.txt</code>（7 个依赖，无编译）</li>
-      <li><code>python -m scripts.seed</code>　→ 看到 <b>共 202 条</b></li>
+      <li><code>python -m scripts.seed</code>　→ 看到 <b>共 200 条</b></li>
       <li><code>python -m uvicorn app.main:app --app-dir backend</code></li>
       <li>浏览器打开 <code>http://127.0.0.1:8000</code>，点「先看一个示例局」→ 五秒后看到三个方案</li>
-      <li>（可选）<code>pytest -q</code>　→ 看到 <b>125 passed</b>；<code>python -m scripts.demo</code>　→ 终端里跑完整流程</li>
+      <li>（可选）<code>pytest -q</code>　→ 看到 <b>127 passed</b>；<code>python -m scripts.demo</code>　→ 终端里跑完整流程</li>
     </ol>
   </div>
   <h2 class="sec page-break" style="margin-top:0"><span class="num">6</span>附录：需求原话与它落成的约束</h2>
@@ -622,7 +653,7 @@ data/*.csv  ──seed──►  SQLite（chenke.db）</code></pre>
         <td>技术栈锁定 Python；动态类型的短板用 pytest + ruff + 类型注解 + CI 补回来</td>
         <td><code>pyproject.toml</code>、<code>.github/workflows/ci.yml</code></td></tr>
     <tr><td>「先做C。纯规则增强…我想把能去玩的地点再增加，你先帮我列出来」</td>
-        <td>先给清单让人选，不许直接开工；规则侧目标 16 字段；数据 49 → 202，每商圈至少 3 个室外点</td>
+        <td>先给清单让人选，不许直接开工；规则侧目标 16 字段；数据 49 → 200，每商圈至少 3 个室外点</td>
         <td>§2.3 验收标准式；<code>data/pois_shenzhen.csv</code></td></tr>
     <tr><td>「with_elder没必要，你先验证一下高德api吧」</td>
         <td>砍功能要明确记进「不做清单」；外部依赖先拿真 Key 探活再写代码</td>
