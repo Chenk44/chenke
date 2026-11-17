@@ -71,9 +71,19 @@ def seed(reset: bool = False) -> int:
             rec.open_hour = poi.open_hour
             rec.close_hour = poi.close_hour
 
+        # CSV 里删掉的地点，库里也要跟着删——否则「数据集是 200 条」和
+        # /api/pois 返回 202 条会同时成立，演示时一眼就被看出来。
+        wanted = {p.id for p in pois}
+        removed = 0
+        for pid, rec in existing.items():
+            if pid not in wanted:
+                db.delete(rec)
+                removed += 1
+
         db.commit()
 
-    print(f"✅ 地点库已更新：新增 {created} 条，更新 {updated} 条，共 {len(pois)} 条")
+    tail = f"，删除 {removed} 条 CSV 里已不存在的地点" if removed else ""
+    print(f"✅ 地点库已更新：新增 {created} 条，更新 {updated} 条，共 {len(pois)} 条{tail}")
     return created + updated
 
 
