@@ -98,7 +98,28 @@
 > 答辩时如果被问"为什么不用更高级的算法"：因为在这个问题规模上，聪明的算法不如把问题定义对。
 > 我们花时间的地方是"公平怎么定义""距离该用步行还是地铁""没填偏好的人怎么处理"。
 
-## 四、快速开始
+## 四、快速开始（10 分钟复现清单）
+
+> 评委如果只想验证「这东西真能跑」，按下面这张表走，**每一步都有明确的期望输出**。
+> 任何一步对不上，就是环境问题，不是项目问题——报错信息请对照最后一列。
+
+| # | 做什么 | 命令 | 期望（照抄核对） |
+|---|---|---|---|
+| 0 | 拿代码 | `git clone https://github.com/Chenk44/chenke && cd chenke` | 约 4 MB |
+| 1 | 看环境 | `python --version` | 3.10 以上（开发用 3.12.14） |
+| 2 | 建虚拟环境 | `python -m venv .venv` | 生成 `.venv/` |
+| 3 | 激活 | Windows `.venv\Scripts\activate` / macOS `.venv/bin/activate` | 提示符前出现 `(.venv)` |
+| 4 | 装依赖 | `pip install -r requirements.txt` | 7 个包，约 30 秒 |
+| 5 | 灌数据 | `python -m scripts.seed` | `✅ 地点库已更新：新增 0 条，更新 200 条，共 200 条` |
+| 6 | 体检数据 | `python -m scripts.audit_pois` | `地点 200 条，可疑 0 处` |
+| 7 | 跑测试 | `python -m pytest -q` | `127 passed` |
+| 8 | 命令行演示 | `python -m scripts.demo` | 打印 3 个方案 + 每人满意度 + 投票 |
+| 9 | 起服务 | `python -m uvicorn app.main:app --app-dir backend --reload` | `Uvicorn running on http://127.0.0.1:8000` |
+| 10 | 验接口 | 浏览器开 `/docs`，或 `curl localhost:8000/api/health` | `{"status":"ok","app":"尘客",...}` |
+| 11 | 看产品 | 浏览器开 <http://127.0.0.1:8000> → 点「先看一个示例局」 | 3 个方案，5 个人已填好 |
+
+**不需要**：数据库服务（SQLite 单文件）、外网（除第 5 步首次可跳过网络）、任何 API Key
+（高德 key 只影响「自动查天气」和「重新拉数据」，仓库里已经带了 200 条数据与天气缓存逻辑的降级路径）。
 
 ### 需要
 
@@ -199,6 +220,9 @@ python -m pytest -q
 │   ├── API.md                   350     17 个接口 + 真实响应样例
 │   ├── DATA.md                  153     数据来源、标注口径、合规说明
 │   ├── evidence.html                   答辩证据页：一页看完所有数字 + 复现命令（离线单文件）
+│   ├── ai-collaboration/               AI 协同记录：3 条完整 Prompt 链 + 原始对话导出
+│   ├── 尘客技术文档.pdf / tech-report.html   技术文档（16 页，可重新导出）
+│   ├── 尘客路演.pptx                    路演 PPT（14 页）
 │   └── preview-*.png                    README 用的两张真实截图
 ├── .github/workflows/ci.yml      44     push 即跑：ruff → 灌数据 → 127 测试 → 真起服务 curl
 ├── run.ps1 / run.sh                     一键启动（Windows / macOS+Linux）
@@ -273,6 +297,22 @@ web/index.html          点「生成方案」
 | GET | `/api/weather?date=YYYY-MM-DD` | 查那天的天气（7 天内；查不到会说查不到，不报错） |
 
 完整定义见 `/docs`（OpenAPI），或 [docs/API.md](docs/API.md)。
+
+## 七点四、AI 协同记录（Prompt 链）
+
+比赛要求提交「与 AI 的对话历史，须包含至少 3 个核心功能迭代的完整 Prompt 链」。
+本项目的完整导出在 **`docs/ai-collaboration/`**：
+
+| 文件 | 内容 |
+|---|---|
+| [`docs/ai-collaboration/00-说明.md`](docs/ai-collaboration/00-说明.md) | 导出方法、阅读顺序、意图控制策略、诚实声明 |
+| [`01-室内偏好.md`](docs/ai-collaboration/01-室内偏好.md) | 「不想去室内」为什么修不好：NLP / 数据模型 / 数据集三层 |
+| [`02-预算语义.md`](docs/ai-collaboration/02-预算语义.md) | 预算被当成「单站上限」，用户用一道加法抓出来 |
+| [`03-前端风格.md`](docs/ai-collaboration/03-前端风格.md) | 整站换风格，8 轮推翻重来 |
+| [`raw/conversation.md`](docs/ai-collaboration/raw/conversation.md) | 原始对话全文（177 条消息，25 万字符，未删改） |
+
+三条链共 80 条我的指令、97 条 AI 回复、1 666 次工具调用，时间跨 11-10 到 11-17。
+导出脚本从会话文件解出，只保留正文、去掉工具明细，**内容未做改写**。
 
 ## 七点五、技术文档
 
