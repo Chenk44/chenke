@@ -105,22 +105,24 @@ class PreferenceIn(BaseModel):
 
 
 class PreferenceOut(BaseModel):
+    # 全部给默认值：有人刚进局、还没填过偏好时，GET 也应该拿到一份「默认口味」，
+    # 而不是 500。之前这里必填，导致新成员一打开填偏好页就报错（前端只是默默吞了）。
     model_config = ConfigDict(from_attributes=True)
 
-    quiet: float
-    price: float
-    near: float
-    max_price: float | None
-    exclude_tags: list[str]
-    indoor_pref: int
-    with_kids: bool
-    has_car: bool
+    quiet: float = 0.5
+    price: float = 0.5
+    near: float = 0.5
+    max_price: float | None = None
+    exclude_tags: list[str] = []
+    indoor_pref: int = 0
+    with_kids: bool = False
+    has_car: bool = False
     prefer_categories: list[str] = []
     exclude_categories: list[str] = []
     prefer_tags: list[str] = []
     max_minutes: int | None = None
     start_hour: int | None = None
-    free_text: str
+    free_text: str = ""
     parsed_hints: list[str] = Field(default_factory=list, description="从一句话里解读到的约束")
 
 

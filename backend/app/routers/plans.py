@@ -90,7 +90,14 @@ def list_plans(code: str, db: Session = Depends(get_db)) -> RecommendOut:
         select(PlanRecord).where(PlanRecord.group_id == group.id).order_by(PlanRecord.rank)
     ).all()
     if not records:
-        raise HTTPException(status_code=404, detail="还没有生成方案，先调用 recommend")
+        # 空局不是错误：前端每 4 秒会来问一次，这里该回 200 + 空列表，
+        # 而不是 404（既不语义正确，也会把日志刷满）。
+        return RecommendOut(
+            plans=[],
+            top_pois=[],
+            agreement=0.0,
+            notes=["还没有生成方案，点上面的「生成方案」看看"],
+        )
 
     return RecommendOut(
         plans=[plan_to_out(r, group) for r in records],

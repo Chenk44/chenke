@@ -107,6 +107,20 @@ def netinfo() -> dict:
 
 
 # 静态前端（web/）。放在最后注册，避免抢走 /api 路由。
+@app.middleware("http")
+async def _no_store_html(request: Request, call_next):
+    """HTML 一律不缓存。
+
+    前端是单文件 index.html，里面的 JS 就是全部逻辑。只要浏览器缓存了旧版本，
+    改了 bug 的用户那个窗口仍然在跑旧代码——「我刷新过了但还是老样子」。
+    """
+    response = await call_next(request)
+    ctype = response.headers.get("content-type", "")
+    if ctype.startswith("text/html"):
+        response.headers["Cache-Control"] = "no-store, must-revalidate"
+    return response
+
+
 _web_dir = BASE_DIR / "web"
 if _web_dir.exists():
     app.mount("/", StaticFiles(directory=str(_web_dir), html=True), name="web")

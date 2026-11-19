@@ -1126,12 +1126,16 @@ function startPolling(code) {
   }, 4000);
 }
 
-// 从别的窗口/标签切回来时立刻同步一次，不用等满 4 秒
-document.addEventListener("visibilitychange", () => {
+// 从别的窗口/标签切回来时立刻同步一次，不用等满 4 秒。
+// visibilitychange 管「切标签」，focus 管「切窗口」——两个窗口并排时前者不触发。
+function syncNow() {
   if (document.hidden) return;
   if (!state.code || !location.hash.startsWith("#g/")) return;
-  pollGroupOnce(state.code).catch(() => {});
-});
+  pollGroupOnce(state.code).catch(() => { /* 网络抖一下就等下一轮 */ });
+}
+document.addEventListener("visibilitychange", syncNow);
+window.addEventListener("focus", syncNow);
+window.addEventListener("pageshow", syncNow);
 
 /* ---------------- 路由 ---------------- */
 

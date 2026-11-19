@@ -314,3 +314,33 @@ def test_recommendation_carries_the_start_time(client):
 
     stored = client.get(f"/api/groups/{group['code']}/plans").json()
     assert stored["plans"][0]["start_minute"] == plans[0]["start_minute"]
+
+
+def test_new_member_can_read_a_default_preference(client):
+    """刚进局、还没填过的人，GET 偏好应该拿到一份默认值，而不是 500。"""
+    group = client.post("/api/groups", json={"name": "默认口味"}).json()
+    member = client.post(f"/api/groups/{group['code']}/members", json={"nickname": "新人"}).json()
+    assert member["filled"] is False
+
+    r = client.get(f"/api/members/{member['id']}/preference")
+    assert r.status_code == 200
+    data = r.json()
+    assert data["quiet"] == 0.5 and data["price"] == 0.5 and data["near"] == 0.5
+    assert data["indoor_pref"] == 0
+    assert data["exclude_tags"] == []
+
+
+def test_plans_before_recommendation_is_an_empty_list_not_an_error(client):
+    """还没生成方案时，前端每 4 秒会来问一次；空局该回 200 + 空列表。"""
+    group = client.post("/api/groups", json={"name": "空局"}).json()
+    r = client.get(f"/api/groups/{group['code']}/plans")
+    assert r.status_code == 200
+    assert r.json()["plans"] == []
+    assert r.json()["notes"]
+
+
+def test_html_is_never_cached(client):
+    """单文件前端的 JS 全在 index.html 里，缓存住就等于用户还在跑旧代码。"""
+    r = client.get("/")
+    assert r.status_code == 200
+    assert "no-store" in r.headers.get("cache-control", "")
