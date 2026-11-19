@@ -854,6 +854,7 @@ async function renderGroupView() {
   let votes = [];
   try { votes = await api(`/groups/${group.code}/votes`); } catch (e) { /* 还没生成方案 */ }
   state.votes = votes;
+  pollKey = groupKey(group, votes);
   const voteMap = Object.fromEntries(votes.map((v) => [v.plan_id, v]));
 
   let result = null;
@@ -1036,6 +1037,8 @@ async function renderGroupView() {
     gen.disabled = true;
     gen.textContent = "算一下…";
     try {
+      // 点它的时候顺手同步一次成员：别人刚加的，不该等到下一次轮询才出现
+      state.group = await api(`/groups/${group.code}`);
       const out = await api(`/groups/${group.code}/recommend`, { method: "POST" });
       state.result = out;
       toast(out.notes && out.notes[0] ? out.notes[0] : "方案出来了");
@@ -1070,15 +1073,79 @@ function nickOf(memberId) {
   return m ? m.nickname : "";
 }
 
+/* ---------------- 实时同步：局页每 4 秒对一次暗号 ----------------
+
+   原先 loadGroup 只在进页面时拉一次，之后 DOM 再也不动：你在自己窗口建局，
+   朋友在另一个窗口加入，你这边永远停在「1/5 人已填」，必须按 F5。
+   答辩现场这是最致命的画面——投屏上的人数不动，看起来像系统是死的。
+
+   做法很朴素：轮询 + 内容指纹。只有成员/已填/票数真的变了才重绘，
+   否则每 4 秒重建一次 DOM，正在点的按钮和滚动位置都会被抖没。
+*/
+let pollTimer = null;
+let pollKey = "";
+
+function groupKey(group, votes) {
+  const members = (group.members || [])
+    .map((m) => `${m.id}:${m.filled ? 1 : 0}:${m.nickname}`)
+    .join(",");
+  const tally = (votes || []).map((v) => `${v.plan_id}:${v.votes}:${v.voters.length}`).join(",");
+  return `${members}|${tally}`;
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+/** 拉一次；内容变了就地重绘，并把滚动位置还回去。 */
+async function pollGroupOnce(code) {
+  if (!state.code || state.code !== code) return;
+  const group = await api(`/groups/${code}`);
+  let votes = [];
+  try { votes = await api(`/groups/${code}/votes`); } catch (e) { votes = []; }
+  const key = groupKey(group, votes);
+  if (key === pollKey) return;
+  pollKey = key;
+  state.group = group;
+  state.votes = votes;
+  const y = window.scrollY;
+  await renderGroupView();
+  window.scrollTo(0, y);
+}
+
+function startPolling(code) {
+  stopPolling();
+  pollTimer = setInterval(() => {
+    // 切到后台就不请求：省得空转，也让 F12 里干干净净
+    if (document.hidden) return;
+    if (location.hash !== `#g/${code}`) return;
+    pollGroupOnce(code).catch(() => { /* 网络抖一下就等下一轮 */ });
+  }, 4000);
+}
+
+// 从别的窗口/标签切回来时立刻同步一次，不用等满 4 秒
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) return;
+  if (!state.code || !location.hash.startsWith("#g/")) return;
+  pollGroupOnce(state.code).catch(() => {});
+});
+
 /* ---------------- 路由 ---------------- */
 
 async function route() {
   const hash = location.hash.replace(/^#/, "");
+  // 每次路由切换先停掉上一个页面留下的轮询，避免首页/偏好页在后台偷偷发请求
+  stopPolling();
   try {
     if (hash === "demo") {
       await startDemo();
     } else if (hash.startsWith("g/")) {
-      await loadGroup(hash.slice(2));
+      const code = hash.slice(2);
+      await loadGroup(code);
+      startPolling(code);
     } else {
       // 这里**不能**再写回 `state.code` 的兜底。
       // 之前「空 hash 就打开上次那个局」的写法，让首页变成永远到不了的地方：
